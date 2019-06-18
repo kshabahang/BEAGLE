@@ -71,15 +71,20 @@ class BEAGLE_HOLO(Model):
         CUBE_str[:] = ''
         CUBE_str[0, 0] = "(PHI)"
         v = np.zeros(N)
-        for k in xrange(1, K): #for each ngram level
-            left_bound = i - k - 1
-            right_bound= i + k 
-            m = 0
-            if left_bound > 0:
-                CUBE_str[k, m] = "{} * {}".format(window[i-k:i], "PHI")
-                m += 1
-            if right_bound < L:
-                CUBE_str[k, m] = "{} * {}".format(window[i:i+k], "PHI")
+        print "(PHI)"
+        for k in xrange(2, K+1): #for each ngram level
+            ngrams = zip(*[window[j:] for j in range(k)])
+            for j in xrange(len(ngrams)):
+                if str(i) in ngrams[j]:
+                    print str(ngrams[j]).replace(str(i), "PHI")
+                    
+
+
+
+
+
+
+
 
 
 
