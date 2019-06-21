@@ -10,6 +10,49 @@ def cconv(a, b):
     '''
     return np.fft.ifft(np.fft.fft(a) * np.fft.fft(b)).real
 
+def ccorr(a, b):
+    '''
+    Computes the circular correlation (inverse convolution) of the real-valued
+    vector a with b.
+    '''
+    return cconv(np.roll(a[::-1], 1), b)
+
+
+
+
+
+class BIND_NODE(object):
+    def __init__(self, h, l = None, r = None, parent=None):
+        self.h = h #height
+        self.l = l #left-child
+        self.r = r #right-child
+
+
+
+
+
+
+class BIND(object):
+    def __init__(self, K, s, i, PHI):
+        self.K = K    # max number of ngrams
+        self.s = s    # token sequence
+        self.i = i    # index of target item to encode
+        self.PHI= PHI # place-holder for the target item
+        self.l = len(s) #number of tokens in the sequence
+        self.root = BIND_NODE(0)
+
+    def recurse_left(self, ):
+        #
+
+    def recurse_right(self, ):
+        #
+
+
+
+
+
+
+
 
 
 class BEAGLE_HOLO(Model):
@@ -232,20 +275,34 @@ if __name__ == "__main__":
 
         
 
-    sentence = "A B C D"
-    beagle.update_vocab(sentence)
-    beagle.learn_context(sentence)
-    beagle.learn_order(sentence)
+    vocab = "A B C".split()
+    n = 1024
+    entries = {vocab[i]:np.random.normal(0.0, 1.0/np.sqrt(n), n) for i in xrange(len(vocab))}
+    sent = "A B C".split()
+    PHI = np.random.normal(0.0, 1.0/np.sqrt(n), n)
 
-    idx = 1
-    sentence = sentence.split()
-    K = 7
-    for n in xrange(2, K+1):
-        print "n = {}".format(n)
-        i_min = max(idx - n, 0)
-        i_max = min(idx + n, len(sentence)-1)
+    E1_map = dict(zip([i for i in xrange(n)], np.random.permutation(n)))
+    E2_map = dict(zip([i for i in xrange(n)], np.random.permutation(n)))
+    D1_map = {E1_map[i]:i for i in xrange(n)} 
+    D2_map = {E2_map[i]:i for i in xrange(n)}
 
+    E1 = lambda a : np.array([a[E1_map[i]] for i in xrange(n)])
+    E2 = lambda a : np.array([a[E2_map[i]] for i in xrange(n)])
+    D1 = lambda a : np.array([a[D1_map[i]] for i in xrange(n)])
+    D2 = lambda a : np.array([a[D2_map[i]] for i in xrange(n)])
 
+    
+    #encode order for B in position 1
+    idx = sent.index("B")
+    m_b = np.zeros(n)
+    m_b += cconv(E1(entries[sent[idx-1]]), E2(PHI)) #2-gram: A_
+    m_b += cconv(E1(PHI), E2(entries[sent[idx+1]])) #2-gram: _C
+    m_b += cconv(E1( cconv(E1(entries[sent[idx-1]]), E2(PHI)) ), E2(entries[sent[idx+1]])) #3-gram: A_C
+    
+    C_hat = D2(ccorr(E1(PHI), m_b)) #what vector succeeds B based on _C
+    print np.dot(C_hat, entries["C"])
+    C_hat = D2( ccorr( E1(cconv(E1(entries["A"]), E2(PHI))  ), m_b)) #what vector succeeds B, given A preceded it?
+    print np.dot(C_hat, entries["C"])
 
 
 
