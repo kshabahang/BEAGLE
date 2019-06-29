@@ -1,9 +1,10 @@
 from GeneralVSAModel import Model
 import numpy as np
-import torch
+#import torch
 from copy import deepcopy
 from progressbar import ProgressBar
 import sys
+import pickle
 
 def cconv(a, b):
     '''
@@ -20,17 +21,28 @@ def ccorr(a, b):
 
 
 class BEAGLE_HOLO(Model):
-    def __init__(self, params, hparams, QaAs=None):
+    def __init__(self, params, hparams, QaAs=None, E=None, vocab = None):
         super(BEAGLE_HOLO, self).__init__(hparams, QaAs)
 
         self.params = params
 
         ###initialize environment vectors
-        self.E = []
+        if type(E) == list:
+            self.E = E
+            self.C = np.zeros((len(E), hparams["NFEATs"]))
+            self.O = np.zeros((len(E), hparams["NFEATs"]))
+        else:
+            self.E = []
+            self.C = []
+            self.O = []
+        if type(vocab) == list:
+            for i in xrange(len(vocab)):
+                self.vocab.append(vocab[i])
+                self.I[vocab[i]] = i
+        else:
+            self.vocab = []
         ###initialize context vectors
-        self.C = []
         ###initialize order vectors
-        self.O = []
         self.N      = hparams["NFEATs"]
         self.SD     = 1.0/np.sqrt(self.N)
 
@@ -211,8 +223,6 @@ if __name__ == "__main__":
     params = []
     hparams = {"NFEATs":1024,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2}
 
-    beagle = BEAGLE_HOLO(params, hparams)
-
     toTest = False
     ##load corpus
     f = open("../rsc/tasaClean.txt", "r")
@@ -220,34 +230,65 @@ if __name__ == "__main__":
     f.close()
     idx = int(sys.argv[1]) #current chunk
     CHU = int(sys.argv[2]) #number of chunks
+    MODE = sys.argv[3]
+        
     L = len(corpus)/CHU
     corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
 
-    if toTest:
-        corpus = ["a b c d e f g", "A B C D E F G", "1 2 3 4 5 6 7 8", "the cat was sitting on the mat"]
-    
-    pbar = ProgressBar(maxval = len(corpus)).start()
-    for i in xrange(len(corpus)):
-        beagle.update_vocab(corpus[i])
-        beagle.learn_context(corpus[i])
-        beagle.learn_order(corpus[i])
-        pbar.update(i+1)
-    beagle.normalize_context()
-    beagle.normalize_order()
-    beagle.compute_lexicon()
+    if MODE == "init":
+        vocab = list(set(" ".join(corpus).split()))
+        E = []
+        N = hparams["NFEATs"]
+        SD = 1/np.sqrt(N)
+        f = open("vocab.txt", "w")
+        for i in xrange(len(vocab)):
+            E.append(np.random.normal(0, SD, N))
+            f.write(vocab[i]+"\n")
+        f.close()
+        f = open("environmental.pkl", "wb")
+        pickle.dump(E, f)
+        f.close()
 
-    if toTest:
-    
-        print "Testing retrieval using serial order with vector for letter D"
-    
-        for i in xrange(1,4):
-            print "*"*72
-            print "lag {}".format(i)
-            print "Forward"
-            a = beagle.sim_order("D", i)
-            print ""
-            print "Backward"
-            a = beagle.sim_order("D", -i)
+    elif MODE == "train":
+        f = open("environmental.pkl", "rb")
+        E = pickle.load(f)
+        f.close()
+        f = open("vocab.txt", "r")
+        vocab = f.readlines()
+        f.close()
+        vocab = [vocab[i].strip() for i in xrange(len(vocab))]
+
+        beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
+
+        
+        pbar = ProgressBar(maxval = len(corpus)).start()
+        for i in xrange(len(corpus)):
+            #beagle.update_vocab(corpus[i])
+            beagle.learn_context(corpus[i])
+            beagle.learn_order(corpus[i])
+            pbar.update(i+1)
+        beagle.normalize_context()
+        beagle.normalize_order()
+        beagle.compute_lexicon()
+
+        f = open("context_CHU{}.pkl".format(CHU), "wb")
+        pickle.dump(beagle.C, f)
+        f.close()
+
+        f = open("order_ORD{}.pkl".format(CHU), "wb")
+        pickle.dump(beagle.O, f)
+        f.close()
+
+
+
+
+
+
+
+
+
+
+
 
 
 
