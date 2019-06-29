@@ -221,7 +221,7 @@ class BEAGLE_HOLO(Model):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":4, "CONTEXT_WINDOW":2}
 
     toTest = False
     ##load corpus
@@ -322,17 +322,17 @@ if __name__ == "__main__":
         f.close()
             
     elif MODE == "run":
-         f = open("environmental.pkl", "rb")                               
+         f = open("../rsc/environmental.pkl", "rb")                               
          E = pickle.load(f)
          f.close()
-         f = open("vocab.txt", "r")
+         f = open("../rsc/vocab.txt", "r")
          vocab = f.readlines()
          f.close()
          vocab = [vocab[i].strip() for i in xrange(len(vocab))]
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-         f = open("order.pkl", "rb")
+         f = open("../rsc/order.pkl", "rb")
          O = pickle.load(f)
          f.close()
 
@@ -342,6 +342,8 @@ if __name__ == "__main__":
 
          beagle.C = C
          beagle.O = O
+         beagle.normalize_order()
+         beagle.normalize_context()
 
 
 
