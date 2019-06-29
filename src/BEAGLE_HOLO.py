@@ -280,6 +280,48 @@ if __name__ == "__main__":
         f = open("order_ORD{}.pkl".format(idx), "wb")
         pickle.dump(beagle.O, f)
         f.close()
+    elif MODE == "compile":
+        f = open("environmental.pkl", "rb")
+        E = pickle.load(f)
+        f.close()
+        f = open("vocab.txt", "r")
+        vocab = f.readlines()
+        f.close()
+        vocab = [vocab[i].strip() for i in xrange(len(vocab))]
+
+        beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
+
+        f = open("order_ORD0.pkl", "rb")
+        O = pickle.load(f)
+        f.close()
+
+        f = open("context_CHU0.pkl", "rb")
+        C = pickle.load(f)
+        f.close()
+
+        for i in xrange(1, CHU):
+            f = open("order_ORD{}.pkl".format(i), "rb")
+            Oi = pickle.load(f)
+            f.close()
+    
+            f = open("context_CHU{}.pkl".format(i), "rb")
+            Ci = pickle.load(f)
+            f.close()
+            for j in xrange(len(Oi)):
+                O[j] += Oi[j]
+                C[j] += Ci[j]
+
+
+        f = open("context.pkl", "wb")
+        pickle.dump(C, f)
+        f.close()
+
+        f = open("order.pkl", "wb")
+        pickle.dump(O, f)
+        f.close()
+            
+#    elif MODE == "run":
+        
 
 
 
