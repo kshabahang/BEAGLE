@@ -298,7 +298,7 @@ if __name__ == "__main__":
         f = open("context_CHU0.pkl", "rb")
         C = pickle.load(f)
         f.close()
-
+        pbar = ProgressBar(maxval = CHU).start()
         for i in xrange(1, CHU):
             f = open("order_ORD{}.pkl".format(i), "rb")
             Oi = pickle.load(f)
@@ -310,6 +310,7 @@ if __name__ == "__main__":
             for j in xrange(len(Oi)):
                 O[j] += Oi[j]
                 C[j] += Ci[j]
+            pbar.update(i+1)
 
 
         f = open("context.pkl", "wb")
@@ -320,24 +321,27 @@ if __name__ == "__main__":
         pickle.dump(O, f)
         f.close()
             
-#    elif MODE == "run":
-        
+    elif MODE == "run":
+         f = open("environmental.pkl", "rb")                               
+         E = pickle.load(f)
+         f.close()
+         f = open("vocab.txt", "r")
+         vocab = f.readlines()
+         f.close()
+         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
+ 
+         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
+         f = open("order.pkl", "rb")
+         O = pickle.load(f)
+         f.close()
 
+         f = open("context.pkl", "rb")
+         C = pickle.load(f)
+         f.close()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+         beagle.C = C
+         beagle.O = O
 
 
 
