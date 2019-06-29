@@ -273,11 +273,11 @@ if __name__ == "__main__":
         beagle.normalize_order()
         beagle.compute_lexicon()
 
-        f = open("context_CHU{}.pkl".format(CHU), "wb")
+        f = open("context_CHU{}.pkl".format(idx), "wb")
         pickle.dump(beagle.C, f)
         f.close()
 
-        f = open("order_ORD{}.pkl".format(CHU), "wb")
+        f = open("order_ORD{}.pkl".format(idx), "wb")
         pickle.dump(beagle.O, f)
         f.close()
 
