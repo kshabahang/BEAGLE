@@ -233,9 +233,10 @@ if __name__ == "__main__":
     MODE = sys.argv[3]
         
     L = len(corpus)/CHU
-    corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
+    
 
     if MODE == "init":
+        corpus = [corpus[i].strip() for i in xrange(len(corpus))]
         vocab = list(set(" ".join(corpus).split()))
         E = []
         N = hparams["NFEATs"]
@@ -250,6 +251,7 @@ if __name__ == "__main__":
         f.close()
 
     elif MODE == "train":
+        corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
         f = open("environmental.pkl", "rb")
         E = pickle.load(f)
         f.close()

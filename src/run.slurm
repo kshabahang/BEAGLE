@@ -6,5 +6,5 @@
 #SBATCH --output vectors%a.out
 #SBATCH -p msps
 module load Python/2.7.12-goolf-2015a
-python BEAGLE_HOLO.py ${SLURM_ARRAY_TASK_ID} 8
+python BEAGLE_HOLO.py ${SLURM_ARRAY_TASK_ID} 8 "train"
 
