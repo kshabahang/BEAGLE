@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from copy import deepcopy
 from progressbar import ProgressBar
+import sys
 
 def cconv(a, b):
     '''
@@ -208,17 +209,22 @@ class BEAGLE_HOLO(Model):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":7, "CONTEXT_WINDOW":7}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2}
 
     beagle = BEAGLE_HOLO(params, hparams)
 
+    toTest = False
     ##load corpus
     f = open("../rsc/tasaClean.txt", "r")
     corpus = f.readlines()
     f.close()
-    corpus = [corpus[i].strip() for i in xrange(len(corpus))]
+    idx = int(sys.argv[1]) #current chunk
+    CHU = int(sys.argv[2]) #number of chunks
+    L = len(corpus)/CHU
+    corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
 
-    corpus = ["a b c d e f g", "A B C D E F G", "1 2 3 4 5 6 7 8", "the cat was sitting on the mat"]
+    if toTest:
+        corpus = ["a b c d e f g", "A B C D E F G", "1 2 3 4 5 6 7 8", "the cat was sitting on the mat"]
     
     pbar = ProgressBar(maxval = len(corpus)).start()
     for i in xrange(len(corpus)):
@@ -230,47 +236,46 @@ if __name__ == "__main__":
     beagle.normalize_order()
     beagle.compute_lexicon()
 
-    print "Testing retrieval using serial order with vector for letter D"
+    if toTest:
+    
+        print "Testing retrieval using serial order with vector for letter D"
+    
+        for i in xrange(1,4):
+            print "*"*72
+            print "lag {}".format(i)
+            print "Forward"
+            a = beagle.sim_order("D", i)
+            print ""
+            print "Backward"
+            a = beagle.sim_order("D", -i)
 
-    for i in xrange(1,4):
-        print "*"*72
-        print "lag {}".format(i)
-        print "Forward"
-        a = beagle.sim_order("D", i)
-        print ""
-        print "Backward"
-        a = beagle.sim_order("D", -i)
 
-        
 
-#    vocab = "A B C".split()
-#    n = 1024
-#    entries = {vocab[i]:np.random.normal(0.0, 1.0/np.sqrt(n), n) for i in xrange(len(vocab))}
-#    sent = "A B C".split()
-#    PHI = np.random.normal(0.0, 1.0/np.sqrt(n), n)
-#
-#    E1_map = dict(zip([i for i in xrange(n)], np.random.permutation(n)))
-#    E2_map = dict(zip([i for i in xrange(n)], np.random.permutation(n)))
-#    D1_map = {E1_map[i]:i for i in xrange(n)} 
-#    D2_map = {E2_map[i]:i for i in xrange(n)}
-#
-#    E1 = lambda a : np.array([a[E1_map[i]] for i in xrange(n)])
-#    E2 = lambda a : np.array([a[E2_map[i]] for i in xrange(n)])
-#    D1 = lambda a : np.array([a[D1_map[i]] for i in xrange(n)])
-#    D2 = lambda a : np.array([a[D2_map[i]] for i in xrange(n)])
-#
-#    
-#    #encode order for B in position 1
-#    idx = sent.index("B")
-#    m_b = np.zeros(n)
-#    m_b += cconv(E1(entries[sent[idx-1]]), E2(PHI)) #2-gram: A_
-#    m_b += cconv(E1(PHI), E2(entries[sent[idx+1]])) #2-gram: _C
-#    m_b += cconv(E1( cconv(E1(entries[sent[idx-1]]), E2(PHI)) ), E2(entries[sent[idx+1]])) #3-gram: A_C
-#    
-#    C_hat = D2(ccorr(E1(PHI), m_b)) #what vector succeeds B based on _C
-#    print np.dot(C_hat, entries["C"])
-#    C_hat = D2( ccorr( E1(cconv(E1(entries["A"]), E2(PHI))  ), m_b)) #what vector succeeds B, given A preceded it?
-#    print np.dot(C_hat, entries["C"])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
