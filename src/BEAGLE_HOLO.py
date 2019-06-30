@@ -221,7 +221,7 @@ class BEAGLE_HOLO(Model):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":4, "CONTEXT_WINDOW":2}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":6, "CONTEXT_WINDOW":2}
 
     toTest = False
     ##load corpus
@@ -252,10 +252,10 @@ if __name__ == "__main__":
 
     elif MODE == "train":
         corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
-        f = open("environmental.pkl", "rb")
+        f = open("../rsc/environmental.pkl", "rb")
         E = pickle.load(f)
         f.close()
-        f = open("vocab.txt", "r")
+        f = open("../rsc/vocab.txt", "r")
         vocab = f.readlines()
         f.close()
         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
@@ -281,10 +281,10 @@ if __name__ == "__main__":
         pickle.dump(beagle.O, f)
         f.close()
     elif MODE == "compile":
-        f = open("environmental.pkl", "rb")
+        f = open("../rsc/environmental.pkl", "rb")
         E = pickle.load(f)
         f.close()
-        f = open("vocab.txt", "r")
+        f = open("../rsc/vocab.txt", "r")
         vocab = f.readlines()
         f.close()
         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
@@ -336,7 +336,7 @@ if __name__ == "__main__":
          O = pickle.load(f)
          f.close()
 
-         f = open("context.pkl", "rb")
+         f = open("../rsc/context.pkl", "rb")
          C = pickle.load(f)
          f.close()
 
