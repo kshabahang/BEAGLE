@@ -221,7 +221,7 @@ class BEAGLE_HOLO(Model):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":8, "CONTEXT_WINDOW":2}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":2, "CONTEXT_WINDOW":2}
 
     toTest = False
     ##load corpus
