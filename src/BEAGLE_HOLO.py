@@ -221,7 +221,7 @@ class BEAGLE_HOLO(Model):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":2, "CONTEXT_WINDOW":2}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":2}
 
     toTest = False
     ##load corpus
@@ -231,6 +231,8 @@ if __name__ == "__main__":
     idx = int(sys.argv[1]) #current chunk
     CHU = int(sys.argv[2]) #number of chunks
     MODE = sys.argv[3]
+    if MODE == "run" or MODE == "compile":
+        source = sys.argv[4] #source of vectors to compile
         
     L = len(corpus)/CHU
     
@@ -291,20 +293,20 @@ if __name__ == "__main__":
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-        f = open("order_ORD0.pkl", "rb")
+        f = open("../rsc/{}/order_ORD0.pkl".format(source), "rb")
         O = pickle.load(f)
         f.close()
 
-        f = open("context_CHU0.pkl", "rb")
+        f = open("../rsc/{}/context_CHU0.pkl".format(source), "rb")
         C = pickle.load(f)
         f.close()
         pbar = ProgressBar(maxval = CHU).start()
         for i in xrange(1, CHU):
-            f = open("order_ORD{}.pkl".format(i), "rb")
+            f = open("../rsc/{}/order_ORD{}.pkl".format(source, i), "rb")
             Oi = pickle.load(f)
             f.close()
     
-            f = open("context_CHU{}.pkl".format(i), "rb")
+            f = open("../rsc/{}/context_CHU{}.pkl".format(source, i), "rb")
             Ci = pickle.load(f)
             f.close()
             for j in xrange(len(Oi)):
@@ -313,11 +315,11 @@ if __name__ == "__main__":
             pbar.update(i+1)
 
 
-        f = open("context.pkl", "wb")
+        f = open("../rsc/{}/context.pkl".format(source), "wb")
         pickle.dump(C, f)
         f.close()
 
-        f = open("order.pkl", "wb")
+        f = open("../rsc/{}/order.pkl".format(source), "wb")
         pickle.dump(O, f)
         f.close()
             
@@ -332,11 +334,11 @@ if __name__ == "__main__":
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-         f = open("../rsc/order.pkl", "rb")
+         f = open("../rsc/{}/order.pkl".format(source), "rb")
          O = pickle.load(f)
          f.close()
 
-         f = open("../rsc/context.pkl", "rb")
+         f = open("../rsc/{}/context.pkl".format(source), "rb")
          C = pickle.load(f)
          f.close()
 
