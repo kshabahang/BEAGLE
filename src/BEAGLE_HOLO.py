@@ -6,6 +6,21 @@ from progressbar import ProgressBar
 import sys
 import pickle
 
+from scipy.io import FortranFile
+
+
+def open_unformatted_mat(fName, m):
+    '''
+    uses the scipy routine FortranFile to import unformatted f90/f95 file dumps (float64)
+    '''
+    f = FortranFile(fName, 'r')
+    mat = []
+    for i in range(m):
+        mat.append(f.read_reals(dtype=np.float64))
+        
+    return np.array(mat)
+
+
 def cconv(a, b):
     '''
     Computes the circular convolution of the (real-valued) vectors a and b.
@@ -269,11 +284,12 @@ if __name__ == "__main__":
 
     elif MODE == "train":
         corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
-        E = open_npz("../rsc/env.npz")
-
-        f = open("../rsc/vocab.txt", "r")
+#        E = open_npz("../rsc/env.npz")
+        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39067))
+        f = open("../rsc/NOVELS/word_list.txt", "r")
         vocab = f.readlines()
         f.close()
+        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
@@ -295,18 +311,21 @@ if __name__ == "__main__":
             beagle.compute_lexicon()
 
         if getContext:
-            np.savez_copmressed("context_CHU{}.npz".format(idx), beagle.C)
+            np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
 
         if getOrder:
-            np.savez_compressed("order_ORD{}.npz".format(idx), beagle.O)
+            np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))
 
 
     elif MODE == "compile":        
-        E = open_npz("../rsc/env.npz")
+#        E = open_npz("../rsc/env.npz")
+        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39067))
 
-        f = open("../rsc/vocab.txt", "r")
+#        f = open("../rsc/vocab.txt", "r")
+        f = open("../rsc/NOVELS/word_list.txt", "r")
         vocab = f.readlines()
         f.close()
+        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
@@ -325,35 +344,36 @@ if __name__ == "__main__":
                     O[j] += Oi[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/order.npz".format(source))
+            np.savez_compressed("../rsc/{}/order.npz".format(source), np.array(O))
 
 
 
         if getContext:
             print "Compiling context "
             pbar = ProgressBar(maxval = CHU).start()
-            Ci = open_npz("../rsc/{}/context_ORD{}.npz".format(source, i))
+            Ci = open_npz("../rsc/{}/context_CHU{}.npz".format(source, i))
             for j in xrange(len(Oi)): 
                 C[j] += Ci[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/context.npz".format(source))
+            np.savez_compressed("../rsc/{}/context.npz".format(source), np.array(C))
  
     elif MODE == "run":
-         E = open_npz("../rsc/env.npz")
+#         E = open_npz("../rsc/env.npz")
+         E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39067))
 
-
-
-         f = open("../rsc/vocab.txt", "r")
+         f = open("../rsc/NOVELS/word_list.txt", "r")
+#         f = open("../rsc/vocab.txt", "r")
          vocab = f.readlines()
          f.close()
+         vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
          vocab = [vocab[i].strip() for i in xrange(len(vocab))]
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
          beagle.O = open_npz("../rsc/{}/order.npz".format(source))
 
-         beagle.C = open_npz("../rsc/{}/context.pkl".format(source))
+         beagle.C = open_npz("../rsc/{}/context.npz".format(source))
 
          beagle.normalize_order()
          beagle.normalize_context()
