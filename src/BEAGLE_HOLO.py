@@ -218,24 +218,37 @@ class BEAGLE_HOLO(Model):
 
         return strengths
 
+def open_npz(npzfile):
+    return list(np.load(npzfile).items()[0][1])
+
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":2}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50}
 
     toTest = False
+    getOrder = True
+    getContext= True
     ##load corpus
-    f = open("../rsc/tasaClean.txt", "r")
-    corpus = f.readlines()
-    f.close()
+  
+
+
+
     idx = int(sys.argv[1]) #current chunk
     CHU = int(sys.argv[2]) #number of chunks
     MODE = sys.argv[3]
     if MODE == "run" or MODE == "compile":
         source = sys.argv[4] #source of vectors to compile
         
-    L = len(corpus)/CHU
-    
+
+
+    if MODE == "init" or MODE == "train":
+        corpus_path = sys.argv[4]
+
+        f = open("{}".format(corpus_path), "r")
+        corpus = f.readlines()
+        f.close()
+        L = len(corpus)/CHU
 
     if MODE == "init":
         corpus = [corpus[i].strip() for i in xrange(len(corpus))]
@@ -244,19 +257,20 @@ if __name__ == "__main__":
         N = hparams["NFEATs"]
         SD = 1/np.sqrt(N)
         f = open("vocab.txt", "w")
+        print "Generating environmental vectors..."
+        pbar = ProgressBar(maxval=len(vocab)).start()
         for i in xrange(len(vocab)):
             E.append(np.random.normal(0, SD, N))
             f.write(vocab[i]+"\n")
-        f.close()
-        f = open("environmental.pkl", "wb")
-        pickle.dump(E, f)
-        f.close()
+            pbar.update(i+1)
+        print "Dumping to disk..."
+        np.savez_compressed("env.npz", np.array(E))
+
 
     elif MODE == "train":
         corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
-        f = open("../rsc/environmental.pkl", "rb")
-        E = pickle.load(f)
-        f.close()
+        E = open_npz("../rsc/env.npz")
+
         f = open("../rsc/vocab.txt", "r")
         vocab = f.readlines()
         f.close()
@@ -268,65 +282,68 @@ if __name__ == "__main__":
         pbar = ProgressBar(maxval = len(corpus)).start()
         for i in xrange(len(corpus)):
             #beagle.update_vocab(corpus[i])
-            beagle.learn_context(corpus[i])
-            beagle.learn_order(corpus[i])
+            if getContext:
+                beagle.learn_context(corpus[i])
+            if getOrder:
+                beagle.learn_order(corpus[i])
             pbar.update(i+1)
-        beagle.normalize_context()
-        beagle.normalize_order()
-        beagle.compute_lexicon()
+        if getContext:
+            beagle.normalize_context()
+        if getOrder:
+            beagle.normalize_order()
+        if getContext and getOrder:
+            beagle.compute_lexicon()
 
-        f = open("context_CHU{}.pkl".format(idx), "wb")
-        pickle.dump(beagle.C, f)
-        f.close()
+        if getContext:
+            np.savez_copmressed("context_CHU{}.npz".format(idx), beagle.C)
 
-        f = open("order_ORD{}.pkl".format(idx), "wb")
-        pickle.dump(beagle.O, f)
-        f.close()
-    elif MODE == "compile":
-        f = open("../rsc/environmental.pkl", "rb")
-        E = pickle.load(f)
-        f.close()
+        if getOrder:
+            np.savez_compressed("order_ORD{}.npz".format(idx), beagle.O)
+
+
+    elif MODE == "compile":        
+        E = open_npz("../rsc/env.npz")
+
         f = open("../rsc/vocab.txt", "r")
         vocab = f.readlines()
         f.close()
         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
+        if getOrder:
+            O = open_npz("../rsc/{}/order_ORD0.npz".format(source))
 
-        f = open("../rsc/{}/order_ORD0.pkl".format(source), "rb")
-        O = pickle.load(f)
-        f.close()
+        if getContext:
+            C = open_npz("../rsc/{}/context_CHU0.npz".format(source))
+        
+        if getOrder:
+            print "Compiling order "
+            pbar = ProgressBar(maxval = CHU).start()
+            for i in xrange(1, CHU):
+                Oi = open_npz("../rsc/{}/order_ORD{}.npz".format(source, i))
+                for j in xrange(len(Oi)):
+                    O[j] += Oi[j]
+                pbar.update(i+1)
 
-        f = open("../rsc/{}/context_CHU0.pkl".format(source), "rb")
-        C = pickle.load(f)
-        f.close()
-        pbar = ProgressBar(maxval = CHU).start()
-        for i in xrange(1, CHU):
-            f = open("../rsc/{}/order_ORD{}.pkl".format(source, i), "rb")
-            Oi = pickle.load(f)
-            f.close()
-    
-            f = open("../rsc/{}/context_CHU{}.pkl".format(source, i), "rb")
-            Ci = pickle.load(f)
-            f.close()
-            for j in xrange(len(Oi)):
-                O[j] += Oi[j]
+            np.savez_compressed("../rsc/{}/order.npz".format(source))
+
+
+
+        if getContext:
+            print "Compiling context "
+            pbar = ProgressBar(maxval = CHU).start()
+            Ci = open_npz("../rsc/{}/context_ORD{}.npz".format(source, i))
+            for j in xrange(len(Oi)): 
                 C[j] += Ci[j]
-            pbar.update(i+1)
+                pbar.update(i+1)
 
-
-        f = open("../rsc/{}/context.pkl".format(source), "wb")
-        pickle.dump(C, f)
-        f.close()
-
-        f = open("../rsc/{}/order.pkl".format(source), "wb")
-        pickle.dump(O, f)
-        f.close()
-            
+            np.savez_compressed("../rsc/{}/context.npz".format(source))
+ 
     elif MODE == "run":
-         f = open("../rsc/environmental.pkl", "rb")                               
-         E = pickle.load(f)
-         f.close()
+         E = open_npz("../rsc/env.npz")
+
+
+
          f = open("../rsc/vocab.txt", "r")
          vocab = f.readlines()
          f.close()
@@ -334,16 +351,10 @@ if __name__ == "__main__":
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-         f = open("../rsc/{}/order.pkl".format(source), "rb")
-         O = pickle.load(f)
-         f.close()
+         beagle.O = open_npz("../rsc/{}/order.npz".format(source))
 
-         f = open("../rsc/{}/context.pkl".format(source), "rb")
-         C = pickle.load(f)
-         f.close()
+         beagle.C = open_npz("../rsc/{}/context.pkl".format(source))
 
-         beagle.C = C
-         beagle.O = O
          beagle.normalize_order()
          beagle.normalize_context()
 
