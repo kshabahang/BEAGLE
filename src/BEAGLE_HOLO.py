@@ -369,9 +369,9 @@ if __name__ == "__main__":
  
     elif MODE == "run":
 #         E = open_npz("../rsc/env.npz")
-         E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
+         E = list(open_unformatted_mat("../rsc/NOVELS_ENV/novels_env.unf", 39076))
 
-         f = open("../rsc/NOVELS/word_list.txt", "r")
+         f = open("../rsc/word_list_novels.txt", "r")
 #         f = open("../rsc/vocab.txt", "r")
          vocab = f.readlines()
          f.close()
