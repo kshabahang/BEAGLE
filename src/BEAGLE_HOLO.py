@@ -64,7 +64,7 @@ class BEAGLE_HOLO(Model):
         f = open("../rsc/STOPLIST.txt", "r")
         STOPLIST = f.readlines()
         f.close()
-        self.STOPLIST = [STOPLIST[i].strip() for i in xrange(len(STOPLIST))]
+        self.STOPLIST = [STOPLIST[i].strip() for i in xrange(len(STOPLIST))] + "rattlebrained classicalism haircloth spatiality".split()
 
         self.PHI = np.random.normal(0.0, self.SD, self.N)
         perm    = np.array([i for i in xrange(self.N)])
@@ -110,27 +110,35 @@ class BEAGLE_HOLO(Model):
         window = window.split()
         N = self.N
         I = self.I
-        WINDOW_LIM = self.hparams["CONTEXT_WINDOW"] + 1
+        WINDOW_LIM = min(self.hparams["CONTEXT_WINDOW"] + 1, len(window))
         for i in xrange(len(window)):
             if window[i] not in self.STOPLIST:
-                wi = window[i]
-                for j in xrange(len(window)):
-                    if j != i and window[j] not in self.STOPLIST and np.abs(i - j) < WINDOW_LIM:
-                        wj = window[j]
-                        self.C[I[wi]] += self.E[I[wj]]
+                try:
+                    wi = window[i]
+                    for j in xrange(len(window)):
+                        if j != i and window[j] not in self.STOPLIST and np.abs(i - j) < WINDOW_LIM:
+                            wj = window[j]
+                            self.C[I[wi]] += self.E[I[wj]]
+                except Exception as e:
+                    print e
+                    continue
 
     def learn_order(self, window):
         '''we assume window is a string of tokens, each already in the vocabulary'''
         window = window.split()
         I = self.I
         for i in xrange(len(window)):
-            wi = window[i]
-            self.O[I[wi]] += self.RP_bind(window, i)
+            try:
+                wi = window[i]
+                self.O[I[wi]] += self.RP_bind(window, i)
+            except Exception as e:
+                print e
+                continue
 
     def RP_bind(self, window, i):
         o = np.zeros(self.N)
         I = self.I
-        WINDOW_LIM = self.hparams["ORDER_WINDOW"] + 1
+        WINDOW_LIM = min(self.hparams["ORDER_WINDOW"] + 1, len(window))
         for j in xrange(len(window)):
             if WINDOW_LIM > j - i > 0:
                 o += self.perm_n(self.E[I[window[j]]], j-i ) #forward associations
@@ -253,7 +261,8 @@ if __name__ == "__main__":
     CHU = int(sys.argv[2]) #number of chunks
     MODE = sys.argv[3]
     if MODE == "run" or MODE == "compile":
-        source = sys.argv[4] #source of vectors to compile
+        source_context = sys.argv[4] #source of vectors to compile
+        source_order = sys.argv[5]
         
 
 
@@ -330,33 +339,33 @@ if __name__ == "__main__":
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
         if getOrder:
-            O = open_npz("../rsc/{}/order_ORD0.npz".format(source))
+            O = open_npz("../rsc/{}/order_ORD0.npz".format(source_order))
 
         if getContext:
-            C = open_npz("../rsc/{}/context_CHU0.npz".format(source))
+            C = open_npz("../rsc/{}/context_CHU0.npz".format(source_context))
         
         if getOrder:
             print "Compiling order "
             pbar = ProgressBar(maxval = CHU).start()
             for i in xrange(1, CHU):
-                Oi = open_npz("../rsc/{}/order_ORD{}.npz".format(source, i))
+                Oi = open_npz("../rsc/{}/order_ORD{}.npz".format(source_order, i))
                 for j in xrange(len(Oi)):
                     O[j] += Oi[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/order.npz".format(source), np.array(O))
+            np.savez_compressed("../rsc/{}/order.npz".format(source_context), np.array(O))
 
 
 
         if getContext:
             print "Compiling context "
             pbar = ProgressBar(maxval = CHU).start()
-            Ci = open_npz("../rsc/{}/context_CHU{}.npz".format(source, i))
+            Ci = open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, i))
             for j in xrange(len(Oi)): 
                 C[j] += Ci[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/context.npz".format(source), np.array(C))
+            np.savez_compressed("../rsc/{}/context.npz".format(source_order), np.array(C))
  
     elif MODE == "run":
 #         E = open_npz("../rsc/env.npz")
@@ -371,9 +380,9 @@ if __name__ == "__main__":
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-         beagle.O = open_npz("../rsc/{}/order.npz".format(source))
+         beagle.O = open_npz("../rsc/{}/order.npz".format(source_order))
 
-         beagle.C = open_npz("../rsc/{}/context.npz".format(source))
+         beagle.C = open_npz("../rsc/{}/context.npz".format(source_context))
 
          beagle.normalize_order()
          beagle.normalize_context()
