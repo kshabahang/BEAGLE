@@ -294,7 +294,7 @@ if __name__ == "__main__":
     elif MODE == "train":
         corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
 #        E = open_npz("../rsc/env.npz")
-        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39067))
+        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
         f = open("../rsc/NOVELS/word_list.txt", "r")
         vocab = f.readlines()
         f.close()
@@ -328,7 +328,7 @@ if __name__ == "__main__":
 
     elif MODE == "compile":        
 #        E = open_npz("../rsc/env.npz")
-        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39067))
+        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
 #        f = open("../rsc/vocab.txt", "r")
         f = open("../rsc/NOVELS/word_list.txt", "r")
@@ -369,7 +369,7 @@ if __name__ == "__main__":
  
     elif MODE == "run":
 #         E = open_npz("../rsc/env.npz")
-         E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39067))
+         E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
          f = open("../rsc/NOVELS/word_list.txt", "r")
 #         f = open("../rsc/vocab.txt", "r")
