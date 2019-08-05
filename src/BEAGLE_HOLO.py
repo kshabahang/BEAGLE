@@ -288,17 +288,19 @@ if __name__ == "__main__":
             f.write(vocab[i]+"\n")
             pbar.update(i+1)
         print "Dumping to disk..."
+        f.close()
         np.savez_compressed("env.npz", np.array(E))
 
 
     elif MODE == "train":
         corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
-#        E = open_npz("../rsc/env.npz")
-        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
-        f = open("../rsc/NOVELS/word_list.txt", "r")
+        E = open_npz("../rsc/env.npz")
+#        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
+#        f = open("../rsc/NOVELS/word_list.txt", "r")
+        f = open("vocab.txt")
         vocab = f.readlines()
         f.close()
-        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
+#        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
@@ -327,14 +329,14 @@ if __name__ == "__main__":
 
 
     elif MODE == "compile":        
-#        E = open_npz("../rsc/env.npz")
-        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
+        E = open_npz("../rsc/env.npz")
+#        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
-#        f = open("../rsc/vocab.txt", "r")
-        f = open("../rsc/NOVELS/word_list.txt", "r")
+        f = open("../rsc/vocab.txt", "r")
+#        f = open("../rsc/NOVELS/word_list.txt", "r")
         vocab = f.readlines()
         f.close()
-        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
+#        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
@@ -368,14 +370,14 @@ if __name__ == "__main__":
             np.savez_compressed("../rsc/{}/context.npz".format(source_order), np.array(C))
  
     elif MODE == "run":
-#         E = open_npz("../rsc/env.npz")
-         E = list(open_unformatted_mat("../rsc/NOVELS_ENV/novels_env.unf", 39076))
+         E = open_npz("../rsc/env.npz")
+#         E = list(open_unformatted_mat("../rsc/NOVELS_ENV/novels_env.unf", 39076))
 
-         f = open("../rsc/word_list_novels.txt", "r")
-#         f = open("../rsc/vocab.txt", "r")
+#         f = open("../rsc/word_list_novels.txt", "r")
+         f = open("../rsc/vocab.txt", "r")
          vocab = f.readlines()
          f.close()
-         vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
+#         vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
          vocab = [vocab[i].strip() for i in xrange(len(vocab))]
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
