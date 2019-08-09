@@ -253,28 +253,18 @@ if __name__ == "__main__":
     getOrder = True
     getContext= True
     ##load corpus
-  
 
 
+    MODE = sys.argv[1]
 
-    idx = int(sys.argv[1]) #current chunk
-    CHU = int(sys.argv[2]) #number of chunks
-    MODE = sys.argv[3]
-    if MODE == "run" or MODE == "compile":
-        source_context = sys.argv[4] #source of vectors to compile
-        source_order = sys.argv[5]
-        
-
-
-    if MODE == "init" or MODE == "train":
-        corpus_path = sys.argv[4]
+    if MODE == "init":
+        corpus_path = sys.argv[2]
 
         f = open("{}".format(corpus_path), "r")
         corpus = f.readlines()
         f.close()
         L = len(corpus)/CHU
 
-    if MODE == "init":
         corpus = [corpus[i].strip() for i in xrange(len(corpus))]
         vocab = list(set(" ".join(corpus).split()))
         E = []
@@ -282,7 +272,7 @@ if __name__ == "__main__":
         SD = 1/np.sqrt(N)
         f = open("vocab.txt", "w")
         print "Generating environmental vectors..."
-        pbar = ProgressBar(maxval=len(vocab)).start()
+        pba = ProgressBar(maxval=len(vocab)).start()
         for i in xrange(len(vocab)):
             E.append(np.random.normal(0, SD, N))
             f.write(vocab[i]+"\n")
@@ -293,6 +283,17 @@ if __name__ == "__main__":
 
 
     elif MODE == "train":
+
+        idx = int(sys.argv[2]) #current chunk
+        CHU = int(sys.argv[3]) #number of chunks
+
+        corpus_path = sys.argv[2]
+
+        f = open("{}".format(corpus_path), "r")
+        corpus = f.readlines()
+        f.close()
+        L = len(corpus)/CHU
+
         corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
         E = open_npz("../rsc/env.npz")
 #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
@@ -328,7 +329,13 @@ if __name__ == "__main__":
             np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))
 
 
-    elif MODE == "compile":        
+    elif MODE == "compile":
+         source_context = sys.argv[2] #source of vectors to compile
+         source_order = sys.argv[3]
+
+
+
+
         E = open_npz("../rsc/env.npz")
 #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
@@ -370,6 +377,9 @@ if __name__ == "__main__":
             np.savez_compressed("../rsc/{}/context.npz".format(source_order), np.array(C))
  
     elif MODE == "run":
+         source_context = sys.argv[2] #source of vectors to compile
+         source_order = sys.argv[3]
+
          E = open_npz("../rsc/env.npz")
 #         E = list(open_unformatted_mat("../rsc/NOVELS_ENV/novels_env.unf", 39076))
 
