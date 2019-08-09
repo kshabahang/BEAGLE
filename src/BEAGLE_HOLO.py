@@ -257,37 +257,43 @@ if __name__ == "__main__":
 
     MODE = sys.argv[1]
 
+    if MODE == "help":
+        print "\n".join(["<MODE> and ARGS: \n", 
+                         "init <corpus path> <env vec path>", 
+                         "train <corpus path> <env vec path> <current chunk idx> <num chunks>",
+                         "compile <env vec path> <context vector paths> <order vector paths> <num chunks>",
+                         "run <env vec path> <context vector paths> <order vector paths>"])
+
     if MODE == "init":
         corpus_path = sys.argv[2]
+        env_vec_path = sys.argv[3] #path for dumping environment vecs
 
         f = open("{}".format(corpus_path), "r")
         corpus = f.readlines()
         f.close()
-        L = len(corpus)/CHU
 
         corpus = [corpus[i].strip() for i in xrange(len(corpus))]
         vocab = list(set(" ".join(corpus).split()))
         E = []
         N = hparams["NFEATs"]
         SD = 1/np.sqrt(N)
-        f = open("vocab.txt", "w")
+        f = open("../rsc/{}/vocab.txt".format(env_vec_path), "w")
         print "Generating environmental vectors..."
-        pba = ProgressBar(maxval=len(vocab)).start()
+        pbar = ProgressBar(maxval=len(vocab)).start()
         for i in xrange(len(vocab)):
             E.append(np.random.normal(0, SD, N))
             f.write(vocab[i]+"\n")
             pbar.update(i+1)
         print "Dumping to disk..."
         f.close()
-        np.savez_compressed("env.npz", np.array(E))
+        np.savez_compressed("../rsc/{}/env.npz".format(env_vec_path), np.array(E))
 
 
     elif MODE == "train":
-
-        idx = int(sys.argv[2]) #current chunk
-        CHU = int(sys.argv[3]) #number of chunks
-
         corpus_path = sys.argv[2]
+        env_vec_path = sys.argv[3] #path to environment vecs
+        idx = int(sys.argv[4]) #current chunk
+        CHU = int(sys.argv[5]) #number of chunks
 
         f = open("{}".format(corpus_path), "r")
         corpus = f.readlines()
@@ -295,10 +301,10 @@ if __name__ == "__main__":
         L = len(corpus)/CHU
 
         corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
-        E = open_npz("../rsc/env.npz")
+        E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 #        f = open("../rsc/NOVELS/word_list.txt", "r")
-        f = open("vocab.txt")
+        f = open("../rsc/{}/vocab.txt".format(env_vec_path))
         vocab = f.readlines()
         f.close()
 #        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
@@ -330,16 +336,14 @@ if __name__ == "__main__":
 
 
     elif MODE == "compile":
-         source_context = sys.argv[2] #source of vectors to compile
-         source_order = sys.argv[3]
-
-
-
-
-        E = open_npz("../rsc/env.npz")
+        env_vec_path = sys.argv[2]  #path to environment vecs
+        source_context = sys.argv[3] #source of vectors to compile
+        source_order = sys.argv[4]
+        CHU = int(sys.argv[5])
+        E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
-        f = open("../rsc/vocab.txt", "r")
+        f = open("../rsc/{}/vocab.txt".format(env_vec_path), "r")
 #        f = open("../rsc/NOVELS/word_list.txt", "r")
         vocab = f.readlines()
         f.close()
@@ -362,7 +366,7 @@ if __name__ == "__main__":
                     O[j] += Oi[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/order.npz".format(source_context), np.array(O))
+            np.savez_compressed("../rsc/{}/order.npz".format(source_order), np.array(O))
 
 
 
@@ -374,17 +378,18 @@ if __name__ == "__main__":
                 C[j] += Ci[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/context.npz".format(source_order), np.array(C))
+            np.savez_compressed("../rsc/{}/context.npz".format(source_context), np.array(C))
  
     elif MODE == "run":
-         source_context = sys.argv[2] #source of vectors to compile
-         source_order = sys.argv[3]
+         env_vec_path = sys.argv[2]
+         source_context = sys.argv[3] #source of vectors to compile
+         source_order = sys.argv[4]
 
-         E = open_npz("../rsc/env.npz")
+         E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #         E = list(open_unformatted_mat("../rsc/NOVELS_ENV/novels_env.unf", 39076))
 
 #         f = open("../rsc/word_list_novels.txt", "r")
-         f = open("../rsc/vocab.txt", "r")
+         f = open("../rsc/{}/vocab.txt".format(env_vec_path), "r")
          vocab = f.readlines()
          f.close()
 #         vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
