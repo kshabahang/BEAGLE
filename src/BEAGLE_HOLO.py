@@ -341,12 +341,13 @@ if __name__ == "__main__":
         if len(sys.argv) > 4:
             #assume we have path to vocab and environment vectors, but we may want to augment them AND they're in <ref env vec path>
             env_vec_ref= sys.argv[4]
-            E_ref = open_npz("../rsc/{}/env.npz".format(env_vec_ref))
+            E_ref = list(open_npz("../rsc/{}/env.npz".format(env_vec_ref)))
             f = open("../rsc/{}/vocab.txt".format(env_vec_ref))
             vocab = f.readlines()
             f.close()
 
             vocab_ref = [vocab[i].strip() for i in xrange(len(vocab))]
+
         else:
             E_ref = []
             vocab_ref = []
@@ -358,6 +359,8 @@ if __name__ == "__main__":
 
         corpus = [corpus[i].strip() for i in xrange(len(corpus))]
         vocab_intersect = list(set(" ".join(corpus).split()) & set(vocab_ref))
+
+        print "{} environmental vectors from referent vocab intersect with current...".format(len(vocab_intersect))
 
         E = []
         vocab = []
