@@ -330,7 +330,7 @@ if __name__ == "__main__":
 
     if MODE == "help":
         print "\n".join(["<MODE> and ARGS: \n", 
-                         "init <corpus path> <env vec path>", 
+                         "init <corpus path> <env vec path> | init <corpus path> <env vec path> <ref env vec path>", 
                          "train <corpus path> <env vec path> <current chunk idx> <num chunks>",
                          "compile <env vec path> <context vector paths> <order vector paths> <num chunks>",
                          "run <env vec path> <context vector paths> <order vector paths>"])
@@ -338,14 +338,39 @@ if __name__ == "__main__":
     if MODE == "init":
         corpus_path = sys.argv[2]
         env_vec_path = sys.argv[3] #path for dumping environment vecs
+        if len(sys.argv) > 4:
+            #assume we have path to vocab and environment vectors, but we may want to augment them AND they're in <ref env vec path>
+            env_vec_ref= sys.argv[4]
+            E_ref = open_npz("../rsc/{}/env.npz".format(env_vec_ref))
+            f = open("../rsc/{}/vocab.txt".format(env_vec_ref))
+            vocab = f.readlines()
+            f.close()
+
+            vocab_ref = [vocab[i].strip() for i in xrange(len(vocab))]
+        else:
+            E_ref = []
+            vocab_ref = []
+
 
         f = open("{}".format(corpus_path), "r")
         corpus = f.readlines()
         f.close()
 
         corpus = [corpus[i].strip() for i in xrange(len(corpus))]
-        vocab = list(set(" ".join(corpus).split()))
+        vocab_intersect = list(set(" ".join(corpus).split()) & set(vocab_ref))
+
         E = []
+        vocab = []
+
+        for i in xrange(len(vocab_ref)):
+            if vocab_ref[i] in vocab_intersect:
+                E.append(E_ref[i])
+                vocab.append(vocab_ref[i])
+
+        ###all the previous entries in the beginning
+        ###now we need to add the complement of the intersect
+        vocab  = vocab_intersect + list(set(" ".join(corpus).split()) - set(vocab_intersect) ) # second term is empty if no ref specified
+
         N = hparams["NFEATs"]
         SD = 1/np.sqrt(N)
         f = open("../rsc/{}/vocab.txt".format(env_vec_path), "w")
