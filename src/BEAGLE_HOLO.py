@@ -67,21 +67,31 @@ class BEAGLE_HOLO(Model):
         self.STOPLIST = [STOPLIST[i].strip() for i in xrange(len(STOPLIST))] + "rattlebrained classicalism haircloth spatiality".split()
 
         self.PHI = np.random.normal(0.0, self.SD, self.N)
+
+        c = np.zeros((self.hparams["ORDER_WINDOW"], self.hparams["ORDER_WINDOW"], self.N))
+        c[0][0][:] = self.PHI #initialize convolution cube
+        self.cube = c
+
+        if self.hparams["bind"] == "permutation":
+            self.bind = self.RP_bind #random permutation method
+        else:
+            self.bind = self.convolution_cube #circular convolution method
+
         perm    = np.array([i for i in xrange(self.N)])
         np.random.shuffle(perm)
         self.p1 = deepcopy(perm)
         np.random.shuffle(perm)
         self.p2 = deepcopy(perm)
 
-#        self.E1_map = dict(zip([i for i in xrange(self.N)], np.random.permutation(self.N)))
-#        self.E2_map = dict(zip([i for i in xrange(self.N)], np.random.permutation(self.N)))
-#        self.D1_map = {self.E1_map[i]:i for i in xrange(self.N)} 
-#        self.D2_map = {self.E2_map[i]:i for i in xrange(self.N)}
-#    
-#        self.E1 = lambda a : np.array([a[self.E1_map[i]] for i in xrange(self.N)])
-#        self.E2 = lambda a : np.array([a[self.E2_map[i]] for i in xrange(self.N)])
-#        self.D1 = lambda a : np.array([a[self.D1_map[i]] for i in xrange(self.N)])
-#        self.D2 = lambda a : np.array([a[self.D2_map[i]] for i in xrange(self.N)])
+        self.E1_map = dict(zip([i for i in xrange(self.N)], np.random.permutation(self.N)))
+        self.E2_map = dict(zip([i for i in xrange(self.N)], np.random.permutation(self.N)))
+        self.D1_map = {self.E1_map[i]:i for i in xrange(self.N)} 
+        self.D2_map = {self.E2_map[i]:i for i in xrange(self.N)}
+    
+        self.E1 = lambda a : np.array([a[self.E1_map[i]] for i in xrange(self.N)])
+        self.E2 = lambda a : np.array([a[self.E2_map[i]] for i in xrange(self.N)])
+        self.D1 = lambda a : np.array([a[self.D1_map[i]] for i in xrange(self.N)])
+        self.D2 = lambda a : np.array([a[self.D2_map[i]] for i in xrange(self.N)])
 
 
     def bind(self, a, b):
@@ -130,7 +140,7 @@ class BEAGLE_HOLO(Model):
         for i in xrange(len(window)):
             try:
                 wi = window[i]
-                self.O[I[wi]] += self.RP_bind(window, i)
+                self.O[I[wi]] += self.bind(window, i)
             except Exception as e:
                 print e
                 continue
@@ -146,6 +156,67 @@ class BEAGLE_HOLO(Model):
                 o += self.invperm_n(self.E[I[window[j]]], i - j)
         return o
 
+
+    def convolution_cube_dbug(self, window, i):
+        Nwd = len(window)
+        K = self.hparams["ORDER_WINDOW"]
+        #c = deepcopy(self.cube)
+        c = np.zeros((5,5,1)).astype(str)
+        c[0,0]="PHI"
+        
+        for j in xrange(1, K): # j'th window size
+            for k in xrange(0, j+1): # k'th j-gram
+                if (j == k):
+                    print ">> j == k"
+                    pos_idx = i + k
+                    inBounds = (pos_idx >= 0) and (pos_idx < Nwd)
+                    if inBounds:
+                        bind = "E1(" + c[j-1][k-1][0] + ") * E2(" + window[pos_idx] + ")"
+                elif (k == 0):
+                    print ">> k == 0"
+                    pos_idx = i - j
+                    inBounds = (pos_idx >= 0) and (pos_idx < Nwd)
+                    if inBounds:
+                        bind = "E1(" + window[pos_idx] + ") * E2(" + c[j-1][k][0] + ")"
+                    else:
+                        print ">> otherwise"
+                        pos_idx = i + k - j #+ 1
+                        max_idx = pos_idx + j
+                        inBounds = (pos_idx >= 0) and (max_idx < Nwd)
+                        if inBounds:
+                            bind = "E1(" + sentence[pos_idx] + ") * E2(" + c[j-1][k][0] + ")"
+            
+                if inBounds:
+                    print bind
+                    c[j][k][0] = bind
+        return c
+
+    def convolution_cube(self, window, i):
+        Nwd = len(window)
+        K = self.hparams["ORDER_WINDOW"]
+        c = deepcopy(self.cube)
+        work = np.zeros(self.N)
+
+        for j in xrange(1, K): # j'th window size
+            for k in xrange(0, j+1): # k'th j-gram
+                if (j == k):
+                    pos_idx = i + k
+                    inBounds = (pos_idx >= 0) and (pos_idx < Nwd)
+                    if inBounds:
+                        work[:] += cconv(self.E1(c[j-1][k-1][:]), self.E2(self.E[self.I[window[pos_idx]]]))
+                elif (k == 0):
+                    pos_idx = i - j
+                    inBounds = (pos_idx >= 0) and (pos_idx < Nwd)
+                    if inBounds:
+                        work[:] += cconv(self.E1(self.E[self.I[window[pos_idx]]]), self.E2(c[j-1][k][:]))
+                    else:
+                        pos_idx = i + k - j 
+                        max_idx = pos_idx + j
+                        inBounds = (pos_idx >= 0) and (max_idx < Nwd)
+                        if inBounds:
+                            work[:] += cconv(self.E1(self.E[self.I[window[pos_idx]]]), self.E2(c[j-1][k][:]))
+
+        return work
 
 
     def normalize_context(self):
@@ -247,7 +318,7 @@ def open_npz(npzfile):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"holographic"}
 
     toTest = False
     getOrder = True
