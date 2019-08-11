@@ -380,7 +380,8 @@ if __name__ == "__main__":
         print "Generating environmental vectors..."
         pbar = ProgressBar(maxval=len(vocab)).start()
         for i in xrange(len(vocab)):
-            E.append(np.random.normal(0, SD, N))
+            if vocab[i] not in vocab_intersect: #initialize new env-vector
+                E.append(np.random.normal(0, SD, N))
             f.write(vocab[i]+"\n")
             pbar.update(i+1)
         print "Dumping to disk..."
