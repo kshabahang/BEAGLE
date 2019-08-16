@@ -318,12 +318,13 @@ def open_npz(npzfile):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":3000,  "ORDER_WINDOW":2, "CONTEXT_WINDOW":2, "bind":"permutation"}
 
     toTest = False
     getOrder = True
     getContext= True
     ##load corpus
+    REP = "RP"
 
 
     MODE = sys.argv[1]
@@ -381,7 +382,13 @@ if __name__ == "__main__":
         pbar = ProgressBar(maxval=len(vocab)).start()
         for i in xrange(len(vocab)):
             if vocab[i] not in vocab_intersect: #initialize new env-vector
-                E.append(np.random.normal(0, SD, N))
+                if REP == "RG": #Random Gaussian
+                    E.append(np.random.normal(0, SD, N))
+                elif REP == "RP": #Random Permutation
+                    u = np.hstack([np.zeros(2940), np.ones(30), -1*np.ones(30)])
+                    np.random.shuffle(u)
+                    E.append(deepcopy(u))
+
             f.write(vocab[i]+"\n")
             pbar.update(i+1)
         print "Dumping to disk..."
@@ -472,10 +479,10 @@ if __name__ == "__main__":
 
         if getContext:
             print "Compiling context "
-            pbar = ProgressBar(maxval = CHU).start()
-            Ci = open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, i))
-            for j in xrange(len(Oi)): 
-                C[j] += Ci[j]
+            pbar = ProgressBar(maxval = CHU).start() 
+            for j in xrange(1, CHU): 
+                Cj = open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, j))
+                C[j] += Cj[j]
                 pbar.update(i+1)
 
             np.savez_compressed("../rsc/{}/context.npz".format(source_context), np.array(C))
