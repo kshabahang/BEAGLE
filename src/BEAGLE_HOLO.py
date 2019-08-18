@@ -5,6 +5,7 @@ from copy import deepcopy
 from progressbar import ProgressBar
 import sys
 import pickle
+from nltk.stem import WordNetLemmatizer
 
 from scipy.io import FortranFile
 
@@ -74,6 +75,15 @@ class BEAGLE_HOLO(Model):
 
         if self.hparams["bind"] == "permutation":
             self.bind = self.RP_bind #random permutation method
+            self.PI = {0:np.arange(0, self.N)}
+
+            PI_fw = np.array([(i+1)%self.N for i in xrange(self.N)])
+            PI_bw = np.array([(i-1)%self.N for i in xrange(self.N)])
+            for i in xrange(self.hparams["ORDER_WINDOW"]):
+                PI = np.arange(0, self.N)
+                self.PI[self.hparams["ORDER_WINDOW"] + i] = np.arange(0, self.N)[PI_fw]
+            for i in xrange(self.hparams["ORDER_WINDOW"]):
+                self.PI[self.hparams["ORDER_WINDOW"] - 2 - i] = np.arange(0, self.N)[PI_bw]
         else:
             self.bind = self.convolution_cube #circular convolution method
 
@@ -94,8 +104,8 @@ class BEAGLE_HOLO(Model):
         self.D2 = lambda a : np.array([a[self.D2_map[i]] for i in xrange(self.N)])
 
 
-    def bind(self, a, b):
-        return cconv(a[self.p1], b[self.p2])
+#    def bind(self, a, b):
+#        return cconv(a[self.p1], b[self.p2])
 
     def update_vocab(self, corpus_process):
         N  = self.N
@@ -139,8 +149,9 @@ class BEAGLE_HOLO(Model):
         I = self.I
         for i in xrange(len(window)):
             try:
-                wi = window[i]
-                self.O[I[wi]] += self.bind(window, i)
+                if window[i] not in self.STOPLIST:
+                    wi = window[i]
+                    self.O[I[wi]] += self.bind(window, i)
             except Exception as e:
                 print e
                 continue
@@ -149,11 +160,19 @@ class BEAGLE_HOLO(Model):
         o = np.zeros(self.N)
         I = self.I
         WINDOW_LIM = min(self.hparams["ORDER_WINDOW"] + 1, len(window))
+#        print "*><*"*42
+#        print "Window limit = {}".format(WINDOW_LIM)
+#        print "Window: " + " ".join(window)
+#        print "target word: {} - at index {}".format(window[i], i)
         for j in xrange(len(window)):
-            if WINDOW_LIM > j - i > 0:
-                o += self.perm_n(self.E[I[window[j]]], j-i ) #forward associations
-            elif -WINDOW_LIM < j - i < 0:
-                o += self.invperm_n(self.E[I[window[j]]], i - j)
+#            print "j: {}".format(i)
+            if -WINDOW_LIM < j - i < 0 or WINDOW_LIM > j - i > 0:
+#                print "    Forward association: pem_n ( E({}), {}, j - i = {} )".format(window[j], j-i, j - i)
+             #   o += self.perm_n(self.E[I[window[j]]], j-i ) #forward associations
+                o += self.E[I[window[j]]][self.PI[j - i]]
+            #elif -WINDOW_LIM < j - i < 0:
+#                print "    Backward association: invperm_n (E({}), {}) --- j - i = {}".format(window[j], i - j, j - i)
+            #    o += self.invperm_n(self.E[I[window[j]]], i - j)
         return o
 
 
@@ -285,12 +304,16 @@ class BEAGLE_HOLO(Model):
             print "ERROR: the token, {}, is not known".format(w)
             return -1
 
-        if n < 0:
-            v = self.perm_n(v, -n)
-        if n > 0:
-            v = self.invperm_n(v, n)
 
-        strengths =  sorted(zip(map(lambda u : np.dot(u, v), self.O), self.vocab))[::-1]
+#        if n < 0:
+#            v = self.perm_n(v, -n)
+#        if n > 0:
+#            v = self.invperm_n(v, n)
+        #
+        if n == 0:
+            strengths =  sorted(zip(map(lambda u : np.dot(u, v), self.O), self.vocab))[::-1]
+        else:
+            strengths =  sorted(zip(map(lambda u : np.dot(u, v[self.PI[n]]), self.E), self.vocab))[::-1]
         for i in xrange(10):
             print round(strengths[i][0], 7), strengths[i][1]
 
@@ -319,7 +342,7 @@ def open_npz(npzfile):
 if __name__ == "__main__":
     params = []
     hparams = {"NFEATs":3000,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2, "bind":"permutation"}
-
+    toStem = True
     toTest = False
     getOrder = True
     getContext= True
@@ -337,6 +360,8 @@ if __name__ == "__main__":
                          "run <env vec path> <context vector paths> <order vector paths>"])
 
     if MODE == "init":
+#        stemmer = PorterStemmer()
+        lemmatizer = WordNetLemmatizer()
         corpus_path = sys.argv[2]
         env_vec_path = sys.argv[3] #path for dumping environment vecs
         if len(sys.argv) > 4:
@@ -354,11 +379,19 @@ if __name__ == "__main__":
             vocab_ref = []
 
 
-        f = open("{}".format(corpus_path), "r")
-        corpus = f.readlines()
+        f = open("../rsc/{}".format(corpus_path), "r")
+        corpus_rd = f.readlines()
         f.close()
+        if toStem: 
+#            print "Stemming corpus..."
+            print "Lemmatizing corpus..."
+            pbar = ProgressBar(maxval = len(corpus_rd)).start()
+            corpus = []
+            for i in xrange(len(corpus_rd)):
+                corpus.append(' '.join(map(lambda w : lemmatizer.lemmatize(w), 
+                                               corpus_rd[i].strip().split())))
+                pbar.update(i+1)
 
-        corpus = [corpus[i].strip() for i in xrange(len(corpus))]
         vocab_intersect = list(set(" ".join(corpus).split()) & set(vocab_ref))
 
         print "{} environmental vectors from referent vocab intersect with current...".format(len(vocab_intersect))
@@ -370,10 +403,41 @@ if __name__ == "__main__":
             if vocab_ref[i] in vocab_intersect:
                 E.append(E_ref[i])
                 vocab.append(vocab_ref[i])
+        
+        vocab0 = deepcopy(vocab) + list(set(" ".join(corpus).split()))
+
+        wf = {vocab0[i]:0 for i in xrange(len(vocab0))}
+        print "Counting words in corpus"
+        pbar = ProgressBar(maxval = len(corpus)).start()
+        for i in xrange(len(corpus)):
+            line = corpus[i].split()
+            for j in xrange(len(line)):
+                wf[line[j]] += 1
+            pbar.update(i+1)
+
+        freq_cutoff = 15000
+        corpus_new = []
+
+        print "Discarding words in corpus with frequency higher than {}".format(freq_cutoff)
+        pbar = ProgressBar(maxval = len(corpus)).start()
+        for i in xrange(len(corpus)):
+            line = corpus[i].split()
+            line_new = []
+            for j in xrange(len(line)):
+                if wf[line[j]] < freq_cutoff:
+                    line_new.append(line[j])
+            pbar.update(i+1)
+            corpus_new.append(' '.join(line_new))
+        corpus = corpus_new
 
         ###all the previous entries in the beginning
         ###now we need to add the complement of the intersect
         vocab  = vocab_intersect + list(set(" ".join(corpus).split()) - set(vocab_intersect) ) # second term is empty if no ref specified
+        print "Dumping corpus to file..."
+        f = open("corpus_ready.txt", "w")
+        for i in xrange(len(corpus)):
+            f.write(corpus[i] + "\n")
+        f.close()
 
         N = hparams["NFEATs"]
         SD = 1/np.sqrt(N)
@@ -387,11 +451,21 @@ if __name__ == "__main__":
                 elif REP == "RP": #Random Permutation
                     u = np.hstack([np.zeros(2940), np.ones(30), -1*np.ones(30)])
                     np.random.shuffle(u)
-                    E.append(deepcopy(u))
+                    
+                    E.append(u/np.linalg.norm(u)) #normalize
 
             f.write(vocab[i]+"\n")
             pbar.update(i+1)
         print "Dumping to disk..."
+        f.close()
+
+        f = open("corpus_ready.txt","w")
+        f.write("\n".join(corpus))
+        f.close()
+
+        f = open("wf.dat", "w")
+        for i in xrange(len(vocab)):
+            f.write(str(wf[vocab[i]]) + '\n')
         f.close()
         np.savez_compressed("../rsc/{}/env.npz".format(env_vec_path), np.array(E))
 
@@ -402,7 +476,7 @@ if __name__ == "__main__":
         idx = int(sys.argv[4]) #current chunk
         CHU = int(sys.argv[5]) #number of chunks
 
-        f = open("{}".format(corpus_path), "r")
+        f = open("../rsc/{}".format(corpus_path + "/corpus_ready.txt"), "r")
         corpus = f.readlines()
         f.close()
         L = len(corpus)/CHU
@@ -435,11 +509,11 @@ if __name__ == "__main__":
         if getContext and getOrder:
             beagle.compute_lexicon()
 
-        if getContext:
-            np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
-
-        if getOrder:
-            np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))
+#        if getContext:
+#            np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
+#
+#        if getOrder:
+#            np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))
 
 
     elif MODE == "compile":
