@@ -452,7 +452,7 @@ if __name__ == "__main__":
                     u = np.hstack([np.zeros(2940), np.ones(30), -1*np.ones(30)])
                     np.random.shuffle(u)
                     
-                    E.append(u/np.linalg.norm(u)) #normalize
+                    E.append(u)#/np.linalg.norm(u)) #normalize
 
             f.write(vocab[i]+"\n")
             pbar.update(i+1)
