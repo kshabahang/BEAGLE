@@ -509,11 +509,11 @@ if __name__ == "__main__":
         if getContext and getOrder:
             beagle.compute_lexicon()
 
-#        if getContext:
-#            np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
-#
-#        if getOrder:
-#            np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))
+        if getContext:
+            np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
+
+        if getOrder:
+            np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))
 
 
     elif MODE == "compile":
@@ -584,6 +584,33 @@ if __name__ == "__main__":
 
          beagle.normalize_order()
          beagle.normalize_context()
+         
+         heading = "Word before" + "Word after" + "Context-only"
+         cues = ["KING", "PRESIDENT", "WAR", "SEA"]
+         to_print = []
+         for cue in cues:
+
+             s = cue + "\n"
+             cue_bw = beagle.sim_order(cue.lower(), 1)
+             cue_fw = beagle.sim_order(cue.lower(), -1)
+             cue_ct = beagle.sim_context(cue.lower())
+             for i in xrange(5):
+                 s += "{} {} ".format(cue_bw[i][1], round(cue_bw[i][0], 2) )
+                 s += "{} {} ".format(cue_fw[i][1], round(cue_fw[i][0], 2) )
+                 s += "{} {} ".format(cue_ct[i][1], round(cue_ct[i][0], 2) )
+                 s += "\n"
+             to_print.append(s)
+         print "       ".join(heading)
+         for i in xrange(len(cues)):
+             print "-"*72
+             print to_print[i]
+            
+
+
+
+
+
+
 
 
 
