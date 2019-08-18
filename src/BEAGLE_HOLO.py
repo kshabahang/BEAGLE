@@ -5,7 +5,7 @@ from copy import deepcopy
 from progressbar import ProgressBar
 import sys
 import pickle
-from nltk.stem import WordNetLemmatizer
+
 
 from scipy.io import FortranFile
 
@@ -349,6 +349,8 @@ if __name__ == "__main__":
     ##load corpus
     REP = "RP"
 
+    if toStem:
+        from nltk.stem import WordNetLemmatizer
 
     MODE = sys.argv[1]
 
