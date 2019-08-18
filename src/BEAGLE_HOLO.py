@@ -277,7 +277,7 @@ class BEAGLE_HOLO(Model):
             print "ERROR: the token, {}, is not known".format(w)
             return -1
 
-        strengths = sorted(zip(map(lambda u : np.dot(u, v), self.C), self.vocab))[::-1]
+        strengths = sorted(zip(map(lambda u : vcos(u, v), self.C), self.vocab))[::-1]
         for i in xrange(10):
             print round(strengths[i][0], 7), strengths[i][1]
         return strengths
@@ -311,9 +311,9 @@ class BEAGLE_HOLO(Model):
 #            v = self.invperm_n(v, n)
         #
         if n == 0:
-            strengths =  sorted(zip(map(lambda u : np.dot(u, v), self.O), self.vocab))[::-1]
+            strengths =  sorted(zip(map(lambda u : vcos(u, v), self.O), self.vocab))[::-1]
         else:
-            strengths =  sorted(zip(map(lambda u : np.dot(u, v[self.PI[n]]), self.E), self.vocab))[::-1]
+            strengths =  sorted(zip(map(lambda u : vcos(u, v[self.PI[n]]), self.E), self.vocab))[::-1]
         for i in xrange(10):
             print round(strengths[i][0], 7), strengths[i][1]
 
@@ -329,11 +329,18 @@ class BEAGLE_HOLO(Model):
             print "ERROR: the token, {}, is not known".format(w)
             return -1
 
-        strengths = sorted(zip(map(lambda u : np.dot(u, v), self.M), self.vocab))[::-1]
+        strengths = sorted(zip(map(lambda u : vcos(u, v), self.M), self.vocab))[::-1]
         for i in xrange(10):
             print round(strengths[i][0], 7), strengths[i][1]
 
         return strengths
+
+def vcos(u,v):
+    udotv = u.dot(v)
+    if udotv != 0:
+        return udotv/(np.linalg.norm(u)*np.linalg.norm(v))
+    else:
+        return 0
 
 def open_npz(npzfile):
     return list(np.load(npzfile).items()[0][1])
