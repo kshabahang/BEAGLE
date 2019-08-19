@@ -458,7 +458,7 @@ if __name__ == "__main__":
                 if REP == "RG": #Random Gaussian
                     E.append(np.random.normal(0, SD, N))
                 elif REP == "RP": #Random Permutation
-                    u = np.hstack([np.zeros(2940), np.ones(30), -1*np.ones(30)])
+                    u = np.hstack([np.zeros(20940), np.ones(30), -1*np.ones(30)])
                     np.random.shuffle(u)
                     
                     E.append(u)#/np.linalg.norm(u)) #normalize
