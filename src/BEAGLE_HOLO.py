@@ -348,7 +348,7 @@ def open_npz(npzfile):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":3000,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2, "bind":"permutation"}
+    hparams = {"NFEATs":30000,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2, "bind":"permutation"}
     toStem = True
     toTest = False
     getOrder = True
