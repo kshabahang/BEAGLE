@@ -149,9 +149,8 @@ class BEAGLE_HOLO(Model):
         I = self.I
         for i in xrange(len(window)):
             try:
-                if window[i] not in self.STOPLIST:
-                    wi = window[i]
-                    self.O[I[wi]] += self.bind(window, i)
+                wi = window[i]
+                self.O[I[wi]] += self.bind(window, i)
             except Exception as e:
                 print e
                 continue
@@ -348,7 +347,8 @@ def open_npz(npzfile):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":3000,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2, "bind":"permutation"}
+    hparams = {"NFEATs":30000,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2, "bind":"permutation"}
+    windowSlide = True
     toStem = True
     toTest = False
     getOrder = True
@@ -369,8 +369,6 @@ if __name__ == "__main__":
                          "run <env vec path> <context vector paths> <order vector paths>"])
 
     if MODE == "init":
-#        stemmer = PorterStemmer()
-        lemmatizer = WordNetLemmatizer()
         corpus_path = sys.argv[2]
         env_vec_path = sys.argv[3] #path for dumping environment vecs
         if len(sys.argv) > 4:
@@ -388,18 +386,9 @@ if __name__ == "__main__":
             vocab_ref = []
 
 
-        f = open("../rsc/{}".format(corpus_path), "r")
-        corpus_rd = f.readlines()
+        f = open("../rsc/{}/corpus_ready.txt".format(corpus_path), "r")
+        corpus = f.readlines()
         f.close()
-        if toStem: 
-#            print "Stemming corpus..."
-            print "Lemmatizing corpus..."
-            pbar = ProgressBar(maxval = len(corpus_rd)).start()
-            corpus = []
-            for i in xrange(len(corpus_rd)):
-                corpus.append(' '.join(map(lambda w : lemmatizer.lemmatize(w), 
-                                               corpus_rd[i].strip().split())))
-                pbar.update(i+1)
 
         vocab_intersect = list(set(" ".join(corpus).split()) & set(vocab_ref))
 
@@ -415,38 +404,10 @@ if __name__ == "__main__":
         
         vocab0 = deepcopy(vocab) + list(set(" ".join(corpus).split()))
 
-        wf = {vocab0[i]:0 for i in xrange(len(vocab0))}
-        print "Counting words in corpus"
-        pbar = ProgressBar(maxval = len(corpus)).start()
-        for i in xrange(len(corpus)):
-            line = corpus[i].split()
-            for j in xrange(len(line)):
-                wf[line[j]] += 1
-            pbar.update(i+1)
-
-        freq_cutoff = 15000
-        corpus_new = []
-
-        print "Discarding words in corpus with frequency higher than {}".format(freq_cutoff)
-        pbar = ProgressBar(maxval = len(corpus)).start()
-        for i in xrange(len(corpus)):
-            line = corpus[i].split()
-            line_new = []
-            for j in xrange(len(line)):
-                if wf[line[j]] < freq_cutoff:
-                    line_new.append(line[j])
-            pbar.update(i+1)
-            corpus_new.append(' '.join(line_new))
-        corpus = corpus_new
-
         ###all the previous entries in the beginning
         ###now we need to add the complement of the intersect
         vocab  = vocab_intersect + list(set(" ".join(corpus).split()) - set(vocab_intersect) ) # second term is empty if no ref specified
-        print "Dumping corpus to file..."
-        f = open("corpus_ready.txt", "w")
-        for i in xrange(len(corpus)):
-            f.write(corpus[i] + "\n")
-        f.close()
+
 
         N = hparams["NFEATs"]
         SD = 1/np.sqrt(N)
@@ -458,7 +419,7 @@ if __name__ == "__main__":
                 if REP == "RG": #Random Gaussian
                     E.append(np.random.normal(0, SD, N))
                 elif REP == "RP": #Random Permutation
-                    u = np.hstack([np.zeros(2940), np.ones(30), -1*np.ones(30)])
+                    u = np.hstack([np.zeros(hparams["NFEATs"]-60), np.ones(30), -1*np.ones(30)])
                     np.random.shuffle(u)
                     
                     E.append(u)#/np.linalg.norm(u)) #normalize
@@ -468,14 +429,7 @@ if __name__ == "__main__":
         print "Dumping to disk..."
         f.close()
 
-        f = open("corpus_ready.txt","w")
-        f.write("\n".join(corpus))
-        f.close()
 
-        f = open("wf.dat", "w")
-        for i in xrange(len(vocab)):
-            f.write(str(wf[vocab[i]]) + '\n')
-        f.close()
         np.savez_compressed("../rsc/{}/env.npz".format(env_vec_path), np.array(E))
 
 
@@ -502,15 +456,26 @@ if __name__ == "__main__":
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-        
-        pbar = ProgressBar(maxval = len(corpus)).start()
-        for i in xrange(len(corpus)):
-            #beagle.update_vocab(corpus[i])
-            if getContext:
-                beagle.learn_context(corpus[i])
-            if getOrder:
-                beagle.learn_order(corpus[i])
-            pbar.update(i+1)
+        if windowSlide:
+            corpus = ' '.join(corpus).split()
+            window_size = max([hparams["CONTEXT_WINDOW"], hparams["ORDER_WINDOW"]])
+            pbar = ProgressBar(maxval = len(corpus)/window_size).start()
+            for i in xrange(len(corpus)/window_size):
+                window = ' '.join(corpus[i*window_size:(i+1)*window_size])
+                if getContext:
+                    beagle.learn_context(window)
+                if getOrder:
+                    beagle.learn_order(window)
+                pbar.update(i+1)
+        else:
+            pbar = ProgressBar(maxval = len(corpus)).start()
+            for i in xrange(len(corpus)):
+                #beagle.update_vocab(corpus[i])
+                if getContext:
+                    beagle.learn_context(corpus[i])
+                if getOrder:
+                    beagle.learn_order(corpus[i])
+                pbar.update(i+1)
         if getContext:
             beagle.normalize_context()
         if getOrder:
