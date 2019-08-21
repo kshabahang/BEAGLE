@@ -65,7 +65,7 @@ class BEAGLE_HOLO(Model):
         f = open("../rsc/STOPLIST.txt", "r")
         STOPLIST = f.readlines()
         f.close()
-        self.STOPLIST = [STOPLIST[i].strip() for i in xrange(len(STOPLIST))] + "rattlebrained classicalism haircloth spatiality".split()
+        self.STOPLIST = list(set([STOPLIST[i].strip() for i in xrange(len(STOPLIST))])) #discard repeats
 
         self.PHI = np.random.normal(0.0, self.SD, self.N)
 
