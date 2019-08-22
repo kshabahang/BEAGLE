@@ -349,7 +349,7 @@ if __name__ == "__main__":
     params = []
     hparams = {"NFEATs":30000,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2, "bind":"permutation"}
     windowSlide = True
-    toStem = True
+    toStem = False
     toTest = False
     getOrder = True
     getContext= True
