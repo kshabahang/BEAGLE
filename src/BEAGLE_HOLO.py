@@ -165,7 +165,7 @@ class BEAGLE_HOLO(Model):
 #        print "target word: {} - at index {}".format(window[i], i)
         for j in xrange(len(window)):
 #            print "j: {}".format(i)
-            if -WINDOW_LIM < j - i < 0 or WINDOW_LIM > j - i > 0:
+            if -WINDOW_LIM < j - i < 0 or WINDOW_LIM > j - i > 0 and window[j] not in self.STOPLIST:
 #                print "    Forward association: pem_n ( E({}), {}, j - i = {} )".format(window[j], j-i, j - i)
              #   o += self.perm_n(self.E[I[window[j]]], j-i ) #forward associations
                 o += self.E[I[window[j]]][self.PI[j - i]]
