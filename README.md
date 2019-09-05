@@ -1,4 +1,4 @@
-# BEAGLE_HOLO
+# BEAGLE
 code for implementing the BEAGLE model by Mewhort and Jones (2007), in addition to alternative binding approach, using Random Permutaitons (Sahlgren, Holst, & Kanerva, 2008).
 
 
