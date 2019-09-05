@@ -4,8 +4,8 @@ code for implementing the BEAGLE model by Mewhort and Jones (2007), in addition 
 
 More specifically, the code was used to construct vectors for the following paper...
 
-Global semantic similarity effects in recognition memory: Insights from BEAGLE representations and the diffusion decision model
-Adam F Osth Andrew Heathcote Douglas Mewhort Kevin Shabahang 
+
+Osth, A. F., Heathcote, A., Mewhort, D. J. K., & Shabahang, K., (in review). Global semantic similarity effects in recognition memory: Insights from BEAGLE representations and the diffusion decision model
 
 
 ...
