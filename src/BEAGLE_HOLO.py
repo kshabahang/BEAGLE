@@ -337,12 +337,13 @@ def open_npz(npzfile):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":10000,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
     windowSlide = True
     toStem = False
     toTest = False
     getOrder = True 
     getContext= True
+    isSparse = True
     ##load corpus
     REP = "RP"
 
