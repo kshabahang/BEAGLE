@@ -337,7 +337,7 @@ def open_npz(npzfile):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":3, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
     windowSlide = True
     toStem = False
     toTest = False
