@@ -104,9 +104,6 @@ class BEAGLE_HOLO(Model):
         self.D2 = lambda a : np.array([a[self.D2_map[i]] for i in xrange(self.N)])
 
 
-#    def bind(self, a, b):
-#        return cconv(a[self.p1], b[self.p2])
-
     def update_vocab(self, corpus_process):
         N  = self.N
         SD = self.SD
@@ -302,13 +299,6 @@ class BEAGLE_HOLO(Model):
         else:
             print "ERROR: the token, {}, is not known".format(w)
             return -1
-
-
-#        if n < 0:
-#            v = self.perm_n(v, -n)
-#        if n > 0:
-#            v = self.invperm_n(v, n)
-        #
         if n == 0:
             strengths =  sorted(zip(map(lambda u : vcos(u, v), self.O), self.vocab))[::-1]
         else:
