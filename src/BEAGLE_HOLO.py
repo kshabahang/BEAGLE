@@ -79,11 +79,11 @@ class BEAGLE_HOLO(Model):
 
             PI_fw = np.array([(i+1)%self.N for i in xrange(self.N)])
             PI_bw = np.array([(i-1)%self.N for i in xrange(self.N)])
-            for i in xrange(self.hparams["ORDER_WINDOW"]):
+            for i in xrange(self.hparams["ORDER_WINDOW"]+2):
                 PI = np.arange(0, self.N)
-                self.PI[self.hparams["ORDER_WINDOW"] + i] = np.arange(0, self.N)[PI_fw]
-            for i in xrange(self.hparams["ORDER_WINDOW"]):
-                self.PI[self.hparams["ORDER_WINDOW"] - 2 - i] = np.arange(0, self.N)[PI_bw]
+                self.PI[i] = self.perm_n(PI, i).astype(int) #np.arange(0, self.N)[PI_fw]
+                self.PI[-i] = self.invperm_n(PI, i).astype(int)
+
         else:
             self.bind = self.convolution_cube #circular convolution method
 
@@ -167,11 +167,11 @@ class BEAGLE_HOLO(Model):
 #            print "j: {}".format(i)
             if (-WINDOW_LIM < j - i < 0 or WINDOW_LIM > j - i > 0) and window[j] not in self.STOPLIST:
 #                print "    Forward association: pem_n ( E({}), {}, j - i = {} )".format(window[j], j-i, j - i)
-             #   o += self.perm_n(self.E[I[window[j]]], j-i ) #forward associations
+#                o += self.perm_n(self.E[I[window[j]]], j-i ) #forward associations
                 o += self.E[I[window[j]]][self.PI[j - i]]
             #elif -WINDOW_LIM < j - i < 0:
 #                print "    Backward association: invperm_n (E({}), {}) --- j - i = {}".format(window[j], i - j, j - i)
-            #    o += self.invperm_n(self.E[I[window[j]]], i - j)
+#                o += self.invperm_n(self.E[I[window[j]]], i - j)
         return o
 
 
@@ -347,11 +347,11 @@ def open_npz(npzfile):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":30000,  "ORDER_WINDOW":1, "CONTEXT_WINDOW":2, "bind":"permutation"}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":3, "CONTEXT_WINDOW":50, "bind":"permutation"}
     windowSlide = True
     toStem = False
     toTest = False
-    getOrder = True
+    getOrder = True 
     getContext= True
     ##load corpus
     REP = "RP"
@@ -527,10 +527,11 @@ if __name__ == "__main__":
 
         if getContext:
             print "Compiling context "
-            pbar = ProgressBar(maxval = CHU).start() 
-            for j in xrange(1, CHU): 
-                Cj = open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, j))
-                C[j] += Cj[j]
+            pbar = ProgressBar(maxval = CHU).start()
+            for i in xrange(1, CHU):
+                Ci = open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, i))
+                for j in xrange(len(Ci)):                     
+                    C[j] += Ci[j]
                 pbar.update(i+1)
 
             np.savez_compressed("../rsc/{}/context.npz".format(source_context), np.array(C))
