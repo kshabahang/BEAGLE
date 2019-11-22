@@ -5,7 +5,7 @@ from copy import deepcopy
 from progressbar import ProgressBar
 import sys
 import pickle
-
+import threading
 
 from scipy.io import FortranFile
 
@@ -334,16 +334,52 @@ def vcos(u,v):
 def open_npz(npzfile):
     return list(np.load(npzfile).items()[0][1])
 
+def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab):
+    beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
+
+    if windowSlide:
+        corpus = ' '.join(corpus).split()
+        window_size = max([hparams["CONTEXT_WINDOW"], hparams["ORDER_WINDOW"]])
+        pbar = ProgressBar(maxval = len(corpus)/window_size).start()
+        for i in xrange(len(corpus)/window_size):
+            window = ' '.join(corpus[i*window_size:(i+1)*window_size])
+            if getContext:
+                beagle.learn_context(window)
+            if getOrder:
+                beagle.learn_order(window)
+            pbar.update(i+1)
+    else:
+        pbar = ProgressBar(maxval = len(corpus)).start()
+        for i in xrange(len(corpus)):
+            #beagle.update_vocab(corpus[i])
+            if getContext:
+                beagle.learn_context(corpus[i])
+            if getOrder:
+                beagle.learn_order(corpus[i])
+            pbar.update(i+1)
+    if getContext:
+        beagle.normalize_context()
+    if getOrder:
+        beagle.normalize_order()
+    if getContext and getOrder:
+        beagle.compute_lexicon()
+
+    if getContext:
+        np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
+
+    if getOrder:
+        np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))  
+
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":10000,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":2048,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
     windowSlide = True
     toStem = False
     toTest = False
     getOrder = True 
     getContext= True
-    isSparse = True
+
     ##load corpus
     REP = "RP"
 
@@ -355,7 +391,7 @@ if __name__ == "__main__":
     if MODE == "help":
         print "\n".join(["<MODE> and ARGS: \n", 
                          "init <corpus path> <env vec path> | init <corpus path> <env vec path> <ref env vec path>", 
-                         "train <corpus path> <env vec path> <current chunk idx> <num chunks>",
+                         "train <corpus path> <env vec path> <num chunks>",
                          "compile <env vec path> <context vector paths> <order vector paths> <num chunks>",
                          "run <env vec path> <context vector paths> <order vector paths>"])
 
@@ -427,59 +463,28 @@ if __name__ == "__main__":
     elif MODE == "train":
         corpus_path = sys.argv[2]
         env_vec_path = sys.argv[3] #path to environment vecs
-        idx = int(sys.argv[4]) #current chunk
-        CHU = int(sys.argv[5]) #number of chunks
+#        idx = int(sys.argv[4]) #current chunk
+        CHU = int(sys.argv[4]) #number of chunks
+        for idx in xrange(CHU):
 
-        f = open("../rsc/{}".format(corpus_path + "/corpus_ready.txt"), "r")
-        corpus = f.readlines()
-        f.close()
-        L = len(corpus)/CHU
+            f = open("../rsc/{}".format(corpus_path + "/corpus_ready.txt"), "r")
+            corpus = f.readlines()
+            f.close()
+            L = len(corpus)/CHU
+    
+            corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
+            E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
+    #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
+    #        f = open("../rsc/NOVELS/word_list.txt", "r")
+            f = open("../rsc/{}/vocab.txt".format(env_vec_path))
+            vocab = f.readlines()
+            f.close()
+    #        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
+            vocab = [vocab[i].strip() for i in xrange(len(vocab))]
 
-        corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
-        E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
-#        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
-#        f = open("../rsc/NOVELS/word_list.txt", "r")
-        f = open("../rsc/{}/vocab.txt".format(env_vec_path))
-        vocab = f.readlines()
-        f.close()
-#        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
-        vocab = [vocab[i].strip() for i in xrange(len(vocab))]
-
-        beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
-
-        if windowSlide:
-            corpus = ' '.join(corpus).split()
-            window_size = max([hparams["CONTEXT_WINDOW"], hparams["ORDER_WINDOW"]])
-            pbar = ProgressBar(maxval = len(corpus)/window_size).start()
-            for i in xrange(len(corpus)/window_size):
-                window = ' '.join(corpus[i*window_size:(i+1)*window_size])
-                if getContext:
-                    beagle.learn_context(window)
-                if getOrder:
-                    beagle.learn_order(window)
-                pbar.update(i+1)
-        else:
-            pbar = ProgressBar(maxval = len(corpus)).start()
-            for i in xrange(len(corpus)):
-                #beagle.update_vocab(corpus[i])
-                if getContext:
-                    beagle.learn_context(corpus[i])
-                if getOrder:
-                    beagle.learn_order(corpus[i])
-                pbar.update(i+1)
-        if getContext:
-            beagle.normalize_context()
-        if getOrder:
-            beagle.normalize_order()
-        if getContext and getOrder:
-            beagle.compute_lexicon()
-
-        if getContext:
-            np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
-
-        if getOrder:
-            np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))
-
+            l1 = threading.Thread(target=learn_corpus, args=(corpus, getContext, getOrder, params, hparams, E, vocab))
+#        learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab)
+            l1.start()
 
     elif MODE == "compile":
         env_vec_path = sys.argv[2]  #path to environment vecs
