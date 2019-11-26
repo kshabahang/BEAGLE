@@ -324,6 +324,33 @@ class BEAGLE_HOLO(Model):
 
         return strengths
 
+    def a_not_b(self, a, b):
+        '''implements vector negation (see Widdows & Peters, 2003)
+           more specifically, projects vector a onto the subspace orthogonal to b'''
+        if type(a) == str: ###TODO have a way to switch to other kinds of vectors
+            a = self.C[self.I[a]]
+            b = self.C[self.I[b]]
+        return a - (np.dot(a,b)/np.dot(b,b))*b
+
+    def noise_reduction(self):
+        '''apply noise reduction to the context vectors'''
+        print "before: "
+        a = self.sim_context("red")
+        u1 = np.ones(self.N)
+        C = np.array(self.C)
+        C = C.T.dot(C)
+        u2 = C.dot(u1)
+        u2 = u2/np.linalg.norm(u2)
+        while(np.linalg.norm(u1 - u2) > 0.0001):
+            u1 = deepcopy(u2)
+            u2 = C.dot(u1)
+            u2 = u2/np.linalg.norm(u2)
+        for i in xrange(len(self.C)):
+            self.C[i] = self.a_not_b(self.C[i], u1)
+        print "done"
+        print "after: "
+        a = self.sim_context("red")
+
 def vcos(u,v):
     udotv = u.dot(v)
     if udotv != 0:
@@ -334,7 +361,7 @@ def vcos(u,v):
 def open_npz(npzfile):
     return list(np.load(npzfile).items()[0][1])
 
-def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab):
+def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
     beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
     if windowSlide:
@@ -373,7 +400,7 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":2048,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":3000,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
     windowSlide = True
     toStem = False
     toTest = False
@@ -482,7 +509,7 @@ if __name__ == "__main__":
     #        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
             vocab = [vocab[i].strip() for i in xrange(len(vocab))]
 
-            l1 = threading.Thread(target=learn_corpus, args=(corpus, getContext, getOrder, params, hparams, E, vocab))
+            l1 = threading.Thread(target=learn_corpus, args=(corpus, getContext, getOrder, params, hparams, E, vocab, idx))
 #        learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab)
             l1.start()
 
