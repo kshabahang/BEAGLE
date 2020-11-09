@@ -52,7 +52,7 @@ class BEAGLE_HOLO(Model):
             self.C = []
             self.O = []
         if type(vocab) == list:
-            for i in xrange(len(vocab)):
+            for i in range(len(vocab)):
                 self.vocab.append(vocab[i])
                 self.I[vocab[i]] = i
         else:
@@ -65,7 +65,7 @@ class BEAGLE_HOLO(Model):
         f = open("../rsc/STOPLIST.txt", "r")
         STOPLIST = f.readlines()
         f.close()
-        self.STOPLIST = list(set([STOPLIST[i].strip() for i in xrange(len(STOPLIST))])) #discard repeats
+        self.STOPLIST = list(set([STOPLIST[i].strip() for i in range(len(STOPLIST))])) #discard repeats
 
         self.PHI = np.random.normal(0.0, self.SD, self.N)
 
@@ -77,9 +77,9 @@ class BEAGLE_HOLO(Model):
             self.bind = self.RP_bind #random permutation method
             self.PI = {0:np.arange(0, self.N)}
 
-            PI_fw = np.array([(i+1)%self.N for i in xrange(self.N)])
-            PI_bw = np.array([(i-1)%self.N for i in xrange(self.N)])
-            for i in xrange(self.hparams["ORDER_WINDOW"]+2):
+            PI_fw = np.array([(i+1)%self.N for i in range(self.N)])
+            PI_bw = np.array([(i-1)%self.N for i in range(self.N)])
+            for i in range(self.hparams["ORDER_WINDOW"]+2):
                 PI = np.arange(0, self.N)
                 self.PI[i] = self.perm_n(PI, i).astype(int) #np.arange(0, self.N)[PI_fw]
                 self.PI[-i] = self.invperm_n(PI, i).astype(int)
@@ -87,21 +87,21 @@ class BEAGLE_HOLO(Model):
         else:
             self.bind = self.convolution_cube #circular convolution method
 
-        perm    = np.array([i for i in xrange(self.N)])
+        perm    = np.array([i for i in range(self.N)])
         np.random.shuffle(perm)
         self.p1 = deepcopy(perm)
         np.random.shuffle(perm)
         self.p2 = deepcopy(perm)
 
-        self.E1_map = dict(zip([i for i in xrange(self.N)], np.random.permutation(self.N)))
-        self.E2_map = dict(zip([i for i in xrange(self.N)], np.random.permutation(self.N)))
-        self.D1_map = {self.E1_map[i]:i for i in xrange(self.N)} 
-        self.D2_map = {self.E2_map[i]:i for i in xrange(self.N)}
+        self.E1_map = dict(zip([i for i in range(self.N)], np.random.permutation(self.N)))
+        self.E2_map = dict(zip([i for i in range(self.N)], np.random.permutation(self.N)))
+        self.D1_map = {self.E1_map[i]:i for i in range(self.N)} 
+        self.D2_map = {self.E2_map[i]:i for i in range(self.N)}
     
-        self.E1 = lambda a : np.array([a[self.E1_map[i]] for i in xrange(self.N)])
-        self.E2 = lambda a : np.array([a[self.E2_map[i]] for i in xrange(self.N)])
-        self.D1 = lambda a : np.array([a[self.D1_map[i]] for i in xrange(self.N)])
-        self.D2 = lambda a : np.array([a[self.D2_map[i]] for i in xrange(self.N)])
+        self.E1 = lambda a : np.array([a[self.E1_map[i]] for i in range(self.N)])
+        self.E2 = lambda a : np.array([a[self.E2_map[i]] for i in range(self.N)])
+        self.D1 = lambda a : np.array([a[self.D1_map[i]] for i in range(self.N)])
+        self.D2 = lambda a : np.array([a[self.D2_map[i]] for i in range(self.N)])
 
 
     def update_vocab(self, corpus_process):
@@ -109,7 +109,7 @@ class BEAGLE_HOLO(Model):
         SD = self.SD
         corpus_process = corpus_process.split()
 
-        for i in xrange(len(corpus_process)):
+        for i in range(len(corpus_process)):
             if corpus_process[i] in self.I:
                 self.wf[corpus_process[i]] += 1
             elif corpus_process[i] != '_':
@@ -128,28 +128,28 @@ class BEAGLE_HOLO(Model):
         N = self.N
         I = self.I
         WINDOW_LIM = min(self.hparams["CONTEXT_WINDOW"] + 1, len(window))
-        for i in xrange(len(window)):
+        for i in range(len(window)):
             if window[i] not in self.STOPLIST:
-                try:
-                    wi = window[i]
-                    for j in xrange(len(window)):
-                        if j != i and window[j] not in self.STOPLIST and np.abs(i - j) < WINDOW_LIM:
-                            wj = window[j]
-                            self.C[I[wi]] += self.E[I[wj]]
-                except Exception as e:
-                    print e
-                    continue
+                #try:
+                wi = window[i]
+                for j in range(len(window)):
+                    if j != i and window[j] not in self.STOPLIST and np.abs(i - j) < WINDOW_LIM:
+                        wj = window[j]
+                        self.C[I[wi]] += self.E[I[wj]]
+                #except Exception as e:
+                 #   print(e)
+                 #   continue
 
     def learn_order(self, window):
         '''we assume window is a string of tokens, each already in the vocabulary'''
         window = window.split()
         I = self.I
-        for i in xrange(len(window)):
+        for i in range(len(window)):
             try:
                 wi = window[i]
                 self.O[I[wi]] += self.bind(window, i)
             except Exception as e:
-                print e
+                print(e)
                 continue
 
     def RP_bind(self, window, i):
@@ -160,7 +160,7 @@ class BEAGLE_HOLO(Model):
 #        print "Window limit = {}".format(WINDOW_LIM)
 #        print "Window: " + " ".join(window)
 #        print "target word: {} - at index {}".format(window[i], i)
-        for j in xrange(len(window)):
+        for j in range(len(window)):
 #            print "j: {}".format(i)
             if (-WINDOW_LIM < j - i < 0 or WINDOW_LIM > j - i > 0) and window[j] not in self.STOPLIST:
 #                print "    Forward association: pem_n ( E({}), {}, j - i = {} )".format(window[j], j-i, j - i)
@@ -179,22 +179,22 @@ class BEAGLE_HOLO(Model):
         c = np.zeros((5,5,1)).astype(str)
         c[0,0]="PHI"
         
-        for j in xrange(1, K): # j'th window size
-            for k in xrange(0, j+1): # k'th j-gram
+        for j in range(1, K): # j'th window size
+            for k in range(0, j+1): # k'th j-gram
                 if (j == k):
-                    print ">> j == k"
+                    print(">> j == k")
                     pos_idx = i + k
                     inBounds = (pos_idx >= 0) and (pos_idx < Nwd)
                     if inBounds:
                         bind = "E1(" + c[j-1][k-1][0] + ") * E2(" + window[pos_idx] + ")"
                 elif (k == 0):
-                    print ">> k == 0"
+                    print( ">> k == 0")
                     pos_idx = i - j
                     inBounds = (pos_idx >= 0) and (pos_idx < Nwd)
                     if inBounds:
                         bind = "E1(" + window[pos_idx] + ") * E2(" + c[j-1][k][0] + ")"
                     else:
-                        print ">> otherwise"
+                        print( ">> otherwise")
                         pos_idx = i + k - j #+ 1
                         max_idx = pos_idx + j
                         inBounds = (pos_idx >= 0) and (max_idx < Nwd)
@@ -202,7 +202,7 @@ class BEAGLE_HOLO(Model):
                             bind = "E1(" + sentence[pos_idx] + ") * E2(" + c[j-1][k][0] + ")"
             
                 if inBounds:
-                    print bind
+                    print (bind)
                     c[j][k][0] = bind
         return c
 
@@ -212,8 +212,8 @@ class BEAGLE_HOLO(Model):
         c = deepcopy(self.cube)
         work = np.zeros(self.N)
 
-        for j in xrange(1, K): # j'th window size
-            for k in xrange(0, j+1): # k'th j-gram
+        for j in range(1, K): # j'th window size
+            for k in range(0, j+1): # k'th j-gram
                 if (j == k):
                     pos_idx = i + k
                     inBounds = (pos_idx >= 0) and (pos_idx < Nwd)
@@ -235,7 +235,7 @@ class BEAGLE_HOLO(Model):
 
 
     def normalize_context(self):
-        for i in xrange(len(self.C)):
+        for i in range(len(self.C)):
             vlen = np.linalg.norm(self.C[i])
             if vlen > 0:
                 self.C[i] = self.C[i]/vlen  
@@ -243,7 +243,7 @@ class BEAGLE_HOLO(Model):
 
 
     def normalize_order(self):
-        for i in xrange(len(self.O)):
+        for i in range(len(self.O)):
             vlen = np.linalg.norm(self.O[i])
             if vlen > 0:
                 self.O[i] = self.O[i]/vlen  
@@ -255,7 +255,7 @@ class BEAGLE_HOLO(Model):
            assumes context and order vectors have been normalized'''
         I = self.I
         M = []
-        for i in xrange(self.V):
+        for i in range(self.V):
             v = self.C[i] + self.O[i]
             vlen = np.linalg.norm(v)
             if vlen > 0:
@@ -270,23 +270,23 @@ class BEAGLE_HOLO(Model):
         elif type(w) == np.ndarray:
             v = w
         else:
-            print "ERROR: the token, {}, is not known".format(w)
+            print( "ERROR: the token, {}, is not known".format(w))
             return -1
 
         strengths = sorted(zip(map(lambda u : vcos(u, v), self.C), self.vocab))[::-1]
-        for i in xrange(10):
-            print round(strengths[i][0], 7), strengths[i][1]
+        for i in range(10):
+            print (round(strengths[i][0], 7), strengths[i][1])
         return strengths
 
     def perm_n(self, x, n):
         y = np.zeros(self.N)
-        for i in xrange(self.N):
+        for i in range(self.N):
             y[(i+n)%self.N] = x[i]
         return y
 
     def invperm_n(self, y, n):
         x = np.zeros(self.N)
-        for i in xrange(self.N):
+        for i in range(self.N):
             x[(i-n)] = y[i]
         return x
 
@@ -297,14 +297,14 @@ class BEAGLE_HOLO(Model):
         elif type(w) == np.ndarray:
             v = w
         else:
-            print "ERROR: the token, {}, is not known".format(w)
+            print ("ERROR: the token, {}, is not known".format(w))
             return -1
         if n == 0:
             strengths =  sorted(zip(map(lambda u : vcos(u, v), self.O), self.vocab))[::-1]
         else:
             strengths =  sorted(zip(map(lambda u : vcos(u, v[self.PI[n]]), self.E), self.vocab))[::-1]
-        for i in xrange(10):
-            print round(strengths[i][0], 7), strengths[i][1]
+        for i in range(10):
+            print (round(strengths[i][0], 7), strengths[i][1])
 
         return strengths
 
@@ -315,12 +315,12 @@ class BEAGLE_HOLO(Model):
         elif type(w) == np.ndarray:
             v = w
         else:
-            print "ERROR: the token, {}, is not known".format(w)
+            print ("ERROR: the token, {}, is not known".format(w))
             return -1
 
         strengths = sorted(zip(map(lambda u : vcos(u, v), self.M), self.vocab))[::-1]
-        for i in xrange(10):
-            print round(strengths[i][0], 7), strengths[i][1]
+        for i in range(10):
+            print (round(strengths[i][0], 7), strengths[i][1])
 
         return strengths
 
@@ -334,7 +334,7 @@ class BEAGLE_HOLO(Model):
 
     def noise_reduction(self):
         '''apply noise reduction to the context vectors'''
-        print "before: "
+        print ("before: ")
         a = self.sim_context("red")
         u1 = np.ones(self.N)
         C = np.array(self.C)
@@ -345,10 +345,10 @@ class BEAGLE_HOLO(Model):
             u1 = deepcopy(u2)
             u2 = C.dot(u1)
             u2 = u2/np.linalg.norm(u2)
-        for i in xrange(len(self.C)):
+        for i in range(len(self.C)):
             self.C[i] = self.a_not_b(self.C[i], u1)
-        print "done"
-        print "after: "
+        print ("done")
+        print ("after: ")
         a = self.sim_context("red")
 
 def vcos(u,v):
@@ -359,7 +359,7 @@ def vcos(u,v):
         return 0
 
 def open_npz(npzfile):
-    return list(np.load(npzfile).items()[0][1])
+    return list(np.load(npzfile))
 
 def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
     beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
@@ -368,7 +368,7 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
         corpus = ' '.join(corpus).split()
         window_size = max([hparams["CONTEXT_WINDOW"], hparams["ORDER_WINDOW"]])
         pbar = ProgressBar(maxval = len(corpus)/window_size).start()
-        for i in xrange(len(corpus)/window_size):
+        for i in range(int(len(corpus)/window_size)):
             window = ' '.join(corpus[i*window_size:(i+1)*window_size])
             if getContext:
                 beagle.learn_context(window)
@@ -377,7 +377,7 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
             pbar.update(i+1)
     else:
         pbar = ProgressBar(maxval = len(corpus)).start()
-        for i in xrange(len(corpus)):
+        for i in range(len(corpus)):
             #beagle.update_vocab(corpus[i])
             if getContext:
                 beagle.learn_context(corpus[i])
@@ -400,7 +400,7 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":3000,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":300,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
     windowSlide = True
     toStem = False
     toTest = False
@@ -416,11 +416,11 @@ if __name__ == "__main__":
     MODE = sys.argv[1]
 
     if MODE == "help":
-        print "\n".join(["<MODE> and ARGS: \n", 
+        print ("\n".join(["<MODE> and ARGS: \n", 
                          "init <corpus path> <env vec path> | init <corpus path> <env vec path> <ref env vec path>", 
                          "train <corpus path> <env vec path> <num chunks>",
                          "compile <env vec path> <context vector paths> <order vector paths> <num chunks>",
-                         "run <env vec path> <context vector paths> <order vector paths>"])
+                         "run <env vec path> <context vector paths> <order vector paths>"]))
 
     if MODE == "init":
         corpus_path = sys.argv[2]
@@ -433,7 +433,7 @@ if __name__ == "__main__":
             vocab = f.readlines()
             f.close()
 
-            vocab_ref = [vocab[i].strip() for i in xrange(len(vocab))]
+            vocab_ref = [vocab[i].strip() for i in range(len(vocab))]
 
         else:
             E_ref = []
@@ -446,12 +446,12 @@ if __name__ == "__main__":
 
         vocab_intersect = list(set(" ".join(corpus).split()) & set(vocab_ref))
 
-        print "{} environmental vectors from referent vocab intersect with current...".format(len(vocab_intersect))
+        print ("{} environmental vectors from referent vocab intersect with current...".format(len(vocab_intersect)))
 
         E = []
         vocab = []
 
-        for i in xrange(len(vocab_ref)):
+        for i in range(len(vocab_ref)):
             if vocab_ref[i] in vocab_intersect:
                 E.append(E_ref[i])
                 vocab.append(vocab_ref[i])
@@ -466,9 +466,9 @@ if __name__ == "__main__":
         N = hparams["NFEATs"]
         SD = 1/np.sqrt(N)
         f = open("../rsc/{}/vocab.txt".format(env_vec_path), "w")
-        print "Generating environmental vectors..."
+        print( "Generating environmental vectors...")
         pbar = ProgressBar(maxval=len(vocab)).start()
-        for i in xrange(len(vocab)):
+        for i in range(len(vocab)):
             if vocab[i] not in vocab_intersect: #initialize new env-vector
                 if REP == "RG": #Random Gaussian
                     E.append(np.random.normal(0, SD, N))
@@ -480,11 +480,11 @@ if __name__ == "__main__":
 
             f.write(vocab[i]+"\n")
             pbar.update(i+1)
-        print "Dumping to disk..."
+        print ("Dumping to disk...")
         f.close()
 
 
-        np.savez_compressed("../rsc/{}/env.npz".format(env_vec_path), np.array(E))
+        np.save("../rsc/{}/env".format(env_vec_path), np.array(E))
 
 
     elif MODE == "train":
@@ -492,22 +492,22 @@ if __name__ == "__main__":
         env_vec_path = sys.argv[3] #path to environment vecs
 #        idx = int(sys.argv[4]) #current chunk
         CHU = int(sys.argv[4]) #number of chunks
-        for idx in xrange(CHU):
+        for idx in range(CHU):
 
             f = open("../rsc/{}".format(corpus_path + "/corpus_ready.txt"), "r")
             corpus = f.readlines()
             f.close()
             L = len(corpus)/CHU
     
-            corpus = [corpus[i].strip() for i in xrange(len(corpus))][idx*L:(idx+1)*L]
-            E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
+            corpus = [corpus[i].strip() for i in range(len(corpus))][int(idx*L):int((idx+1)*L)]
+            E = list(np.load("../rsc/{}/env.npy".format(env_vec_path)))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
     #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
     #        f = open("../rsc/NOVELS/word_list.txt", "r")
             f = open("../rsc/{}/vocab.txt".format(env_vec_path))
             vocab = f.readlines()
             f.close()
-    #        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
-            vocab = [vocab[i].strip() for i in xrange(len(vocab))]
+    #        vocab = [vocab[i].split()[0] for i in range(len(vocab))]
+            vocab = [vocab[i].strip() for i in range(len(vocab))]
 
             l1 = threading.Thread(target=learn_corpus, args=(corpus, getContext, getOrder, params, hparams, E, vocab, idx))
 #        learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab)
@@ -518,46 +518,46 @@ if __name__ == "__main__":
         source_context = sys.argv[3] #source of vectors to compile
         source_order = sys.argv[4]
         CHU = int(sys.argv[5])
-        E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
+        E = np.load("../rsc/{}/env.npz".format(env_vec_path))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
         f = open("../rsc/{}/vocab.txt".format(env_vec_path), "r")
 #        f = open("../rsc/NOVELS/word_list.txt", "r")
         vocab = f.readlines()
         f.close()
-#        vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
-        vocab = [vocab[i].strip() for i in xrange(len(vocab))]
+#        vocab = [vocab[i].split()[0] for i in range(len(vocab))]
+        vocab = [vocab[i].strip() for i in range(len(vocab))]
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
         if getOrder:
-            O = open_npz("../rsc/{}/order_ORD0.npz".format(source_order))
+            O = np.load("../rsc/{}/order_ORD0.npy".format(source_order))#open_npz("../rsc/{}/order_ORD0.npz".format(source_order))
 
         if getContext:
-            C = open_npz("../rsc/{}/context_CHU0.npz".format(source_context))
+            C = np.load("../rsc/{}/context_CHU0.npy".format(source_context))#open_npz("../rsc/{}/context_CHU0.npz".format(source_context))
         
         if getOrder:
-            print "Compiling order "
+            print ("Compiling order ")
             pbar = ProgressBar(maxval = CHU).start()
-            for i in xrange(1, CHU):
-                Oi = open_npz("../rsc/{}/order_ORD{}.npz".format(source_order, i))
-                for j in xrange(len(Oi)):
+            for i in range(1, CHU):
+                Oi = np.load("../rsc/{}/order_ORD{}.npy".format(source_order, i))#open_npz("../rsc/{}/order_ORD{}.npz".format(source_order, i))
+                for j in range(len(Oi)):
                     O[j] += Oi[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/order.npz".format(source_order), np.array(O))
+            np.save("../rsc/{}/order.npy".format(source_order), np.array(O))
 
 
 
         if getContext:
-            print "Compiling context "
+            print ("Compiling context ")
             pbar = ProgressBar(maxval = CHU).start()
-            for i in xrange(1, CHU):
-                Ci = open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, i))
-                for j in xrange(len(Ci)):                     
+            for i in range(1, CHU):
+                Ci = np.load("../rsc/{}/context_CHU{}.npy".format(source_context, i))#open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, i))
+                for j in range(len(Ci)):                     
                     C[j] += Ci[j]
                 pbar.update(i+1)
 
-            np.savez_compressed("../rsc/{}/context.npz".format(source_context), np.array(C))
+            np.save("../rsc/{}/context.npy".format(source_context), np.array(C))
  
     elif MODE == "run":
          env_vec_path = sys.argv[2]
@@ -571,8 +571,8 @@ if __name__ == "__main__":
          f = open("../rsc/{}/vocab.txt".format(env_vec_path), "r")
          vocab = f.readlines()
          f.close()
-#         vocab = [vocab[i].split()[0] for i in xrange(len(vocab))]
-         vocab = [vocab[i].strip() for i in xrange(len(vocab))]
+#         vocab = [vocab[i].split()[0] for i in range(len(vocab))]
+         vocab = [vocab[i].strip() for i in range(len(vocab))]
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
@@ -592,16 +592,16 @@ if __name__ == "__main__":
              cue_bw = beagle.sim_order(cue.lower(), 1)
              cue_fw = beagle.sim_order(cue.lower(), -1)
              cue_ct = beagle.sim_context(cue.lower())
-             for i in xrange(5):
+             for i in range(5):
                  s += "{} {} ".format(cue_bw[i][1], round(cue_bw[i][0], 2) )
                  s += "{} {} ".format(cue_fw[i][1], round(cue_fw[i][0], 2) )
                  s += "{} {} ".format(cue_ct[i][1], round(cue_ct[i][0], 2) )
                  s += "\n"
              to_print.append(s)
-         print "       ".join(heading)
-         for i in xrange(len(cues)):
-             print "-"*72
-             print to_print[i]
+         print ("       ".join(heading))
+         for i in range(len(cues)):
+             print ("-"*72)
+             print (to_print[i])
             
 
 
