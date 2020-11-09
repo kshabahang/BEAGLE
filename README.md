@@ -1,5 +1,5 @@
 # BEAGLE
-code for implementing the BEAGLE model by Mewhort and Jones (2007), in addition to alternative binding approach, using Random Permutaitons (Sahlgren, Holst, & Kanerva, 2008).
+code for implementing the BEAGLE model by Mewhort and Jones (2007), in addition to an alternative binding approach for constructing the serial-order vectors, using Random Permutaitons (Sahlgren, Holst, & Kanerva, 2008).
 
 
 More specifically, the code was used to construct vectors for the following paper...
