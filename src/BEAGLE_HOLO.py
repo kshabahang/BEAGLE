@@ -303,8 +303,8 @@ class BEAGLE_HOLO(Model):
             strengths =  sorted(zip(map(lambda u : vcos(u, v), self.O), self.vocab))[::-1]
         else:
             strengths =  sorted(zip(map(lambda u : vcos(u, v[self.PI[n]]), self.E), self.vocab))[::-1]
-        for i in range(10):
-            print (round(strengths[i][0], 7), strengths[i][1])
+        #for i in range(10):
+        #    print (round(strengths[i][0], 7), strengths[i][1])
 
         return strengths
 
@@ -392,10 +392,12 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
         beagle.compute_lexicon()
 
     if getContext:
-        np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
+        #np.savez_compressed("context_CHU{}.npz".format(idx), np.array(beagle.C))
+        np.save("context_CHU{}".format(idx), np.array(beagle.C))
 
     if getOrder:
-        np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))  
+        np.save("order_ORD{}".format(idx), np.array(beagle.O))
+        #np.savez_compressed("order_ORD{}.npz".format(idx), np.array(beagle.O))  
 
 
 if __name__ == "__main__":
@@ -428,7 +430,7 @@ if __name__ == "__main__":
         if len(sys.argv) > 4:
             #assume we have path to vocab and environment vectors, but we may want to augment them AND they're in <ref env vec path>
             env_vec_ref= sys.argv[4]
-            E_ref = list(open_npz("../rsc/{}/env.npz".format(env_vec_ref)))
+            E_ref = np.load("../rsc/{}/env.npy".format(env_vec_ref))#list(open_npz("../rsc/{}/env.npz".format(env_vec_ref)))
             f = open("../rsc/{}/vocab.txt".format(env_vec_ref))
             vocab = f.readlines()
             f.close()
@@ -564,7 +566,7 @@ if __name__ == "__main__":
          source_context = sys.argv[3] #source of vectors to compile
          source_order = sys.argv[4]
 
-         E = open_npz("../rsc/{}/env.npz".format(env_vec_path))
+         E = list(np.load("../rsc/{}/env.npy".format(env_vec_path)))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #         E = list(open_unformatted_mat("../rsc/NOVELS_ENV/novels_env.unf", 39076))
 
 #         f = open("../rsc/word_list_novels.txt", "r")
@@ -576,9 +578,9 @@ if __name__ == "__main__":
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-         beagle.O = open_npz("../rsc/{}/order.npz".format(source_order))
+         beagle.O = np.load("../rsc/{}/order.npy".format(source_order))#open_npz("../rsc/{}/order.npz".format(source_order))
 
-         beagle.C = open_npz("../rsc/{}/context.npz".format(source_context))
+         beagle.C = np.load("../rsc/{}/context.npy".format(source_context))#open_npz("../rsc/{}/context.npz".format(source_context))
 
          beagle.normalize_order()
          beagle.normalize_context()
