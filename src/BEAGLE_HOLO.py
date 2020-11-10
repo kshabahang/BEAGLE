@@ -402,7 +402,7 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":300,  "ORDER_WINDOW":5, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":3000,  "ORDER_WINDOW":2, "CONTEXT_WINDOW":50, "bind":"permutation"}
     windowSlide = True
     toStem = False
     toTest = False
@@ -520,7 +520,7 @@ if __name__ == "__main__":
         source_context = sys.argv[3] #source of vectors to compile
         source_order = sys.argv[4]
         CHU = int(sys.argv[5])
-        E = np.load("../rsc/{}/env.npz".format(env_vec_path))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
+        E = np.load("../rsc/{}/env.npy".format(env_vec_path))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
         f = open("../rsc/{}/vocab.txt".format(env_vec_path), "r")
