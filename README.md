@@ -14,7 +14,7 @@ Note that parts of the code may be redundant due to change of approach.  For ins
 
 
 If this work was useful to you and you want to somehow thank my work, donations are welcome:
-ETH: 0x5831aa28D2378Ae5333f57B3C2d8FeC3C736eEeb
+<p>ETH: 0x5831aa28D2378Ae5333f57B3C2d8FeC3C736eEeb</p>
 XMR: 44q99xTChW3B8dNykAGRza66TRZi2wpnAZtj2FuGwwL9H8shiXJYwgcicGf529uufyRDBMsLTLXAcKWohQRHvvdfUw4fWm2
 DODGE: DEhsBqavQmY2i7RgZQCsjXeTY9kceuy454
 LTC: ltc1qq9gdv7tpmwutdxvap05t049rvm96qtmmmtshs2
