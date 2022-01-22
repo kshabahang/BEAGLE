@@ -11,3 +11,11 @@ Osth, A. F., Heathcote, A., Mewhort, D. J. K., & Shabahang, K., (in review). Glo
 ...
 
 Note that parts of the code may be redundant due to change of approach.  For instance, instead of shifting vectors on-the-fly when binding via random permutations, I later changed the code so that we pre-compute the permutation vectors and use Numpy's vector indexing approach to speed up the process.  I have tested the code against typical examples to ensure correctness, but perhaps you'll notice something that I missed.
+
+
+If this work was useful to you and you want to somehow thank my work, donations are welcome:
+ETH:0x5831aa28D2378Ae5333f57B3C2d8FeC3C736eEeb
+XMR:44q99xTChW3B8dNykAGRza66TRZi2wpnAZtj2FuGwwL9H8shiXJYwgcicGf529uufyRDBMsLTLXAcKWohQRHvvdfUw4fWm2
+DODGE: DEhsBqavQmY2i7RgZQCsjXeTY9kceuy454
+LTC:ltc1qq9gdv7tpmwutdxvap05t049rvm96qtmmmtshs2
+
