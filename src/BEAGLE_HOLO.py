@@ -402,10 +402,10 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":3000,  "ORDER_WINDOW":2, "CONTEXT_WINDOW":50, "bind":"permutation"}
+    hparams = {"NFEATs":1024,  "ORDER_WINDOW":7, "CONTEXT_WINDOW":7, "bind":"permutation"}
     windowSlide = True
     toStem = False
-    toTest = False
+    toTest = True
     getOrder = True 
     getContext= True
 
@@ -510,10 +510,12 @@ if __name__ == "__main__":
             f.close()
     #        vocab = [vocab[i].split()[0] for i in range(len(vocab))]
             vocab = [vocab[i].strip() for i in range(len(vocab))]
+            learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx)
 
-            l1 = threading.Thread(target=learn_corpus, args=(corpus, getContext, getOrder, params, hparams, E, vocab, idx))
-#        learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab)
-            l1.start()
+
+            #l1 = threading.Thread(target=learn_corpus, args=(corpus, getContext, getOrder, params, hparams, E, vocab, idx))
+        #learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab)
+            #l1.start()
 
     elif MODE == "compile":
         env_vec_path = sys.argv[2]  #path to environment vecs
