@@ -6,9 +6,9 @@ from progressbar import ProgressBar
 import sys
 import pickle
 import threading
-
+import json
 from scipy.io import FortranFile
-
+import os
 
 def open_unformatted_mat(fName, m):
     '''
@@ -62,9 +62,10 @@ class BEAGLE_HOLO(Model):
         self.N      = hparams["NFEATs"]
         self.SD     = 1.0/np.sqrt(self.N)
 
-        f = open("../rsc/STOPLIST.txt", "r")
-        STOPLIST = f.readlines()
-        f.close()
+        #f = open("../rsc/STOPLIST.txt", "r")
+        #STOPLIST = f.readlines()
+        #f.close()
+        STOPLIST = [] #TODO fix this for other simulations
         self.STOPLIST = list(set([STOPLIST[i].strip() for i in range(len(STOPLIST))])) #discard repeats
 
         self.PHI = np.random.normal(0.0, self.SD, self.N)
@@ -402,12 +403,25 @@ def learn_corpus(corpus, getContext, getOrder, params, hparams, E, vocab, idx):
 
 if __name__ == "__main__":
     params = []
-    hparams = {"NFEATs":1024,  "ORDER_WINDOW":7, "CONTEXT_WINDOW":7, "bind":"permutation"}
+    #
     windowSlide = True
     toStem = False
     toTest = True
     getOrder = True 
     getContext= True
+
+    f = open("../config.json", "r")
+    config = json.loads(f.read())
+    f.close()
+
+    corpus_path = config['memory_path'] + config["corpus"]+"/"#sys.argv[2]
+    env_vec_path = config['memory_path'] + config["corpus"] + "/BEAGLE/"#sys.argv[3] #path for dumping environment vecs
+    corpus = config["corpus"]
+
+    lbl = '_'.join(["{}{}".format(param,config['BEAGLE'][param]) for param in config['BEAGLE'].keys()])
+
+    NFEATs = config["BEAGLE"]["NFEATs"]
+    hparams = {"NFEATs":NFEATs,  "ORDER_WINDOW":config["BEAGLE"]["ORDER_WINDOW"], "CONTEXT_WINDOW":config["BEAGLE"]["CONTEXT_WINDOW"], "bind":config["BEAGLE"]["bind"]}
 
     ##load corpus
     REP = "RP"
@@ -425,24 +439,27 @@ if __name__ == "__main__":
                          "run <env vec path> <context vector paths> <order vector paths>"]))
 
     if MODE == "init":
-        corpus_path = sys.argv[2]
-        env_vec_path = sys.argv[3] #path for dumping environment vecs
-        if len(sys.argv) > 4:
-            #assume we have path to vocab and environment vectors, but we may want to augment them AND they're in <ref env vec path>
-            env_vec_ref= sys.argv[4]
-            E_ref = np.load("../rsc/{}/env.npy".format(env_vec_ref))#list(open_npz("../rsc/{}/env.npz".format(env_vec_ref)))
-            f = open("../rsc/{}/vocab.txt".format(env_vec_ref))
-            vocab = f.readlines()
-            f.close()
-
-            vocab_ref = [vocab[i].strip() for i in range(len(vocab))]
-
-        else:
-            E_ref = []
-            vocab_ref = []
 
 
-        f = open("../rsc/{}/corpus_ready.txt".format(corpus_path), "r")
+
+        if not os.path.isdir(env_vec_path):
+            os.system("mkdir " + env_vec_path)
+        #if len(sys.argv) > 4:
+        #    #assume we have path to vocab and environment vectors, but we may want to augment them AND they're in <ref env vec path>
+        #    env_vec_ref= sys.argv[4]
+        #    E_ref = np.load("../rsc/{}/env.npy".format(env_vec_ref))#list(open_npz("../rsc/{}/env.npz".format(env_vec_ref)))
+        #    f = open("../rsc/{}/vocab.txt".format(env_vec_ref))
+        #    vocab = f.readlines()
+        #    f.close()
+
+        #    vocab_ref = [vocab[i].strip() for i in range(len(vocab))]
+
+        #else: #TODO re-implement this
+        E_ref = []
+        vocab_ref = []
+
+
+        f = open("{}/{}.txt".format(corpus_path, corpus), "r")
         corpus = f.readlines()
         f.close()
 
@@ -465,17 +482,18 @@ if __name__ == "__main__":
         vocab  = vocab_intersect + list(set(" ".join(corpus).split()) - set(vocab_intersect) ) # second term is empty if no ref specified
 
 
-        N = hparams["NFEATs"]
+        
+        N = NFEATs#hparams["NFEATs"]
         SD = 1/np.sqrt(N)
-        f = open("../rsc/{}/vocab.txt".format(env_vec_path), "w")
+        f = open("{}/vocab.txt".format(env_vec_path), "w")
         print( "Generating environmental vectors...")
         pbar = ProgressBar(maxval=len(vocab)).start()
         for i in range(len(vocab)):
             if vocab[i] not in vocab_intersect: #initialize new env-vector
                 if REP == "RG": #Random Gaussian
-                    E.append(np.random.normal(0, SD, N))
+                    E.append(np.random.normal(0, SD, N)) 
                 elif REP == "RP": #Random Permutation
-                    u = np.hstack([np.zeros(hparams["NFEATs"]-60), np.ones(30), -1*np.ones(30)])
+                    u = np.hstack([np.zeros(NFEATs - 60), np.ones(30), -1*np.ones(30)]) #spatter-codes
                     np.random.shuffle(u)
                     
                     E.append(u)#/np.linalg.norm(u)) #normalize
@@ -486,26 +504,26 @@ if __name__ == "__main__":
         f.close()
 
 
-        np.save("../rsc/{}/env".format(env_vec_path), np.array(E))
+        np.save("{}/env_{}".format(env_vec_path, lbl), np.array(E))
 
 
     elif MODE == "train":
-        corpus_path = sys.argv[2]
-        env_vec_path = sys.argv[3] #path to environment vecs
+        #corpus_path = sys.argv[2]
+        #env_vec_path = sys.argv[3] #path to environment vecs
 #        idx = int(sys.argv[4]) #current chunk
-        CHU = int(sys.argv[4]) #number of chunks
+        CHU = 1#int(sys.argv[4]) #number of chunks
         for idx in range(CHU):
 
-            f = open("../rsc/{}".format(corpus_path + "/corpus_ready.txt"), "r")
+            f = open("{}".format(corpus_path + "/{}.txt".format(corpus)), "r")
             corpus = f.readlines()
             f.close()
             L = len(corpus)/CHU
     
             corpus = [corpus[i].strip() for i in range(len(corpus))][int(idx*L):int((idx+1)*L)]
-            E = list(np.load("../rsc/{}/env.npy".format(env_vec_path)))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
+            E = list(np.load("{}/env_{}.npy".format(env_vec_path, lbl)))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
     #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
     #        f = open("../rsc/NOVELS/word_list.txt", "r")
-            f = open("../rsc/{}/vocab.txt".format(env_vec_path))
+            f = open("{}/vocab.txt".format(env_vec_path))
             vocab = f.readlines()
             f.close()
     #        vocab = [vocab[i].split()[0] for i in range(len(vocab))]
@@ -518,14 +536,14 @@ if __name__ == "__main__":
             #l1.start()
 
     elif MODE == "compile":
-        env_vec_path = sys.argv[2]  #path to environment vecs
-        source_context = sys.argv[3] #source of vectors to compile
-        source_order = sys.argv[4]
-        CHU = int(sys.argv[5])
-        E = np.load("../rsc/{}/env.npy".format(env_vec_path))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
+        #env_vec_path = sys.argv[2]  #path to environment vecs
+        #env_vec_path = sys.argv[3] #source of vectors to compile
+        #env_vec_path = sys.argv[4]
+        CHU = 1#int(sys.argv[5])
+        E = np.load("{}/env_{}.npy".format(env_vec_path, lbl))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #        E = list(open_unformatted_mat("../rsc/NOVELS/env_novels.unf", 39076))
 
-        f = open("../rsc/{}/vocab.txt".format(env_vec_path), "r")
+        f = open("{}/vocab.txt".format(env_vec_path), "r")
 #        f = open("../rsc/NOVELS/word_list.txt", "r")
         vocab = f.readlines()
         f.close()
@@ -534,21 +552,21 @@ if __name__ == "__main__":
 
         beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
         if getOrder:
-            O = np.load("../rsc/{}/order_ORD0.npy".format(source_order))#open_npz("../rsc/{}/order_ORD0.npz".format(source_order))
+            O = np.load("order_ORD0.npy")#open_npz("../rsc/{}/order_ORD0.npz".format(env_vec_path))
 
         if getContext:
-            C = np.load("../rsc/{}/context_CHU0.npy".format(source_context))#open_npz("../rsc/{}/context_CHU0.npz".format(source_context))
+            C = np.load("context_CHU0.npy")#opn_npz("../rsc/{}/context_CHU0.npz".format(env_vec_path))
         
         if getOrder:
             print ("Compiling order ")
             pbar = ProgressBar(maxval = CHU).start()
             for i in range(1, CHU):
-                Oi = np.load("../rsc/{}/order_ORD{}.npy".format(source_order, i))#open_npz("../rsc/{}/order_ORD{}.npz".format(source_order, i))
+                Oi = np.load("order_ORD{}.npy".format(i))#open_npz("../rsc/{}/order_ORD{}.npz".format(env_vec_path, i))
                 for j in range(len(Oi)):
                     O[j] += Oi[j]
                 pbar.update(i+1)
 
-            np.save("../rsc/{}/order.npy".format(source_order), np.array(O))
+            np.save("{}/order_{}.npy".format(env_vec_path, lbl), np.array(O))
 
 
 
@@ -556,23 +574,20 @@ if __name__ == "__main__":
             print ("Compiling context ")
             pbar = ProgressBar(maxval = CHU).start()
             for i in range(1, CHU):
-                Ci = np.load("../rsc/{}/context_CHU{}.npy".format(source_context, i))#open_npz("../rsc/{}/context_CHU{}.npz".format(source_context, i))
+                Ci = np.load("context_CHU{}.npy".format(i))#open_npz("../rsc/{}/context_CHU{}.npz".format(env_vec_path, i))
                 for j in range(len(Ci)):                     
                     C[j] += Ci[j]
                 pbar.update(i+1)
 
-            np.save("../rsc/{}/context.npy".format(source_context), np.array(C))
+            np.save("{}/context_{}.npy".format(env_vec_path, lbl), np.array(C))
  
     elif MODE == "run":
-         env_vec_path = sys.argv[2]
-         source_context = sys.argv[3] #source of vectors to compile
-         source_order = sys.argv[4]
 
-         E = list(np.load("../rsc/{}/env.npy".format(env_vec_path)))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
+         E = list(np.load("{}/env_{}.npy".format(env_vec_path, lbl)))#open_npz("../rsc/{}/env.npz".format(env_vec_path))
 #         E = list(open_unformatted_mat("../rsc/NOVELS_ENV/novels_env.unf", 39076))
 
 #         f = open("../rsc/word_list_novels.txt", "r")
-         f = open("../rsc/{}/vocab.txt".format(env_vec_path), "r")
+         f = open("{}/vocab.txt".format(env_vec_path), "r")
          vocab = f.readlines()
          f.close()
 #         vocab = [vocab[i].split()[0] for i in range(len(vocab))]
@@ -580,9 +595,9 @@ if __name__ == "__main__":
  
          beagle = BEAGLE_HOLO(params, hparams, E = E, vocab = vocab)
 
-         beagle.O = np.load("../rsc/{}/order.npy".format(source_order))#open_npz("../rsc/{}/order.npz".format(source_order))
+         beagle.O = np.load("{}/order_{}.npy".format(env_vec_path, lbl))#open_npz("../rsc/{}/order.npz".format(env_vec_path))
 
-         beagle.C = np.load("../rsc/{}/context.npy".format(source_context))#open_npz("../rsc/{}/context.npz".format(source_context))
+         beagle.C = np.load("{}/context_{}.npy".format(env_vec_path, lbl))#open_npz("../rsc/{}/context.npz".format(env_vec_path))
 
          beagle.normalize_order()
          beagle.normalize_context()
